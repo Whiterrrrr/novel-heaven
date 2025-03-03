@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }} - Novel Heaven{% endblock %}
+
+{% block content %}
+<article class="article-container">
+    <div class="card shadow">
+        <div class="card-header bg-light">
+            <h1 class="display-4 mb-3">{{ article.title }}</h1>
+            <div class="article-meta">
+                <img src="https://via.placeholder.com/40" class="rounded-circle me-2">
+                <span class="fw-bold">{{ article.author.username }}</span>
+                <span class="text-muted mx-2">•</span>
+                <span class="text-muted">{{ article.created_at.strftime('%Y-%m-%d') }}</span>
+                <span class="badge bg-primary ms-2">{{ article.category }}</span>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="article-content">
+                {{ article.content|safe }}
+            </div>
+
+            <div class="article-actions mt-4">
+                <button class="btn btn-outline-danger like-btn">
+                    <i class="fas fa-heart"></i> 
+                    <span class="count">{{ article.likes }}</span>
+                </button>
+                <button class="btn btn-outline-primary ms-2">
+                    <i class="fas fa-comment"></i> 评论
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 评论区 -->
+    <section class="comments mt-4">
+        <div class="card shadow">
+            <div class="card-header">
+                <h5><i class="fas fa-comments"></i> 读者评论</h5>
+            </div>
+            <div class="card-body">
+                <!-- 评论表单 -->
+                <form class="mb-4">
+                    <textarea class="form-control" rows="3" placeholder="写下你的评论..."></textarea>
+                    <button class="btn btn-primary mt-2">提交评论</button>
+                </form>
+
+                <!-- 评论列表 -->
+                <div class="comment-list">
+                    <!-- 示例评论 -->
+                    <div class="comment-item mb-3">
+                        <div class="d-flex">
+                            <img src="https://via.placeholder.com/40" class="rounded-circle me-3">
+                            <div>
+                                <h6 class="mb-0">示例用户</h6>
+                                <small class="text-muted">2023-08-01 10:00</small>
+                                <p class="mt-1">非常精彩的故事！</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</article>
+{% endblock %}
+
+<style>
+.article-content {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    font-family: 'Noto Serif SC', serif;
+}
+
+.article-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.like-btn:hover .fa-heart {
+    color: #dc3545;
+}
+</style>

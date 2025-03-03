@@ -1,0 +1,50 @@
+/* 渐变背景 */
+.gradient-bg {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+}
+
+/* 卡片动效 */
+.card {
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: none;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+/* 导航栏美化 */
+.navbar-brand {
+    font-family: 'Merriweather', serif;
+    letter-spacing: 1px;
+}
+
+/* 表单元素 */
+.form-control:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13,110,253,0.25);
+}
+
+/* 文章排版 */
+.article-content p {
+    margin-bottom: 1.5rem;
+    text-align: justify;
+}
+
+.article-content h2 {
+    margin: 2rem 0 1rem;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 0.5rem;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .article-content {
+        font-size: 1rem;
+    }
+    
+    .navbar-nav {
+        margin-top: 1rem;
+    }
+}
