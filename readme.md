@@ -1,4 +1,5 @@
 # Novel Heaven
+
 ## How to start
 ### 1. 克隆代码仓库
 ```
@@ -22,3 +23,12 @@ from app import db
 db.create_all()
 exit()
 ```
+
+## Useful information
+### 1. Flask Tut
+```
+https://tutorial.helloflask.com/
+```
+
+### 2. framework update
+see framework.md
