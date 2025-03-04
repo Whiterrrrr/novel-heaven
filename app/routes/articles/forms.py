@@ -1,6 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SelectField, TextAreaField, BooleanField, SubmitField
 from wtforms.validators import DataRequired, Length
+from flask_ckeditor import CKEditorField
 
 # 分类选项配置
 CATEGORY_CHOICES = [
@@ -29,3 +30,13 @@ class ArticleForm(FlaskForm):
     
     save_as_draft = BooleanField('保存为草稿')
     submit = SubmitField('立即发布')
+    
+class ChapterForm(FlaskForm):
+    chapter_title = StringField('章节标题', validators=[
+        DataRequired(),
+        Length(max=100)
+    ])
+    content = CKEditorField('正文内容', validators=[
+        DataRequired(),
+        Length(min=1000)
+    ])

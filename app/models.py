@@ -12,7 +12,7 @@ class User(UserMixin, db.Model):
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     balance = db.Column(db.Integer, default=0)
-    
+    last_read_book = db.Column(db.String(140))
     articles = db.relationship('Article', backref='author', lazy='dynamic')
     comments = db.relationship('Comment', backref='user', lazy='dynamic')
 
@@ -25,15 +25,49 @@ class User(UserMixin, db.Model):
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(140))
-    content = db.Column(db.Text)
-    category = db.Column(db.String(50))
+    author = db.Column(db.String(64), index=True, unique=True)
+    category_id = db.Column(db.Integer, primary_key=True)
+    category_name = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     views = db.Column(db.Integer, default=0)
     likes = db.Column(db.Integer, default=0)
     is_draft = db.Column(db.Boolean, default=True)
+    introduction = db.Column(db.String(500))
+    chapters = db.relationship('Chapter', backref='article', lazy='dynamic')
+    
+class BookShelf(db.model):
+    id = db.Column(db.Integer, primary_key=True)
+    book_id = db.Column(db.Integer, primary_key=True)
+    book_name = db.Column(db.String(140))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    
+class ReadingProgress(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, primary_key=True)
+    book_id = db.Column(db.Integer, primary_key=True)
 
+class Chapter(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100))
+    content = db.Column(db.Text, nullable=False)
+    order = db.Column(db.Integer, default=0)
+    article_id = db.Column(db.Integer, db.ForeignKey('Article.id'))
+    is_draft = db.Column(db.Boolean, default=True)  # 章节草稿状态
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    
+class KeyWord(db.Model):
+    keyword = db.Column(db.String(20))
+    count = db.Column(db.Integer, default=0)
+    is_hot = db.Column(db.Boolean, default=False)
+    
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    cat_name = db.Column(db.String(30))
+    cat_books = # Book_list
+    
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text)
