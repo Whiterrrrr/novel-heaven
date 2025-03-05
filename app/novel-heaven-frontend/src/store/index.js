@@ -2,14 +2,10 @@ import { defineStore } from 'pinia';
 
 export const useUserStore = defineStore('user', {
   state: () => ({
-    user: null,
+    isAuthenticated: false,  // 是否登录
   }),
   actions: {
-    setUser(user) {
-      this.user = user;
-    },
-    logout() {
-      this.user = null;
-    },
-  },
+    login() { this.isAuthenticated = true; },
+    logout() { this.isAuthenticated = false; }
+  }
 });
