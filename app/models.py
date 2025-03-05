@@ -12,13 +12,14 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
+    gender = db.Column(db.String(64))
     password_hash = db.Column(db.String(128))
     is_author = db.Column(db.Boolean, default=False)
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     balance = db.Column(db.Integer, default=0)
     last_read_book = db.Column(db.String(140))
-    articles = db.relationship('Article', backref='author', lazy='dynamic')
+    creation_lists = db.relationship('CreationList', backref='author', lazy='dynamic')
     comments = db.relationship('Comment', backref='user', lazy='dynamic')
 
     def set_password(self, password):
@@ -26,6 +27,16 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+class CreationList(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    book_id = db.Column(db.Integer, db.ForeignKey('article.id'))
+    book_name = db.Column(db.String(140))
+    create_date = db.Column(db.DateTime, default=datetime.utcnow)
+    latest_update_time = db.Column(db.DateTime, default=datetime.utcnow)
+    latest_update_section_name = db.Column(db.String(140))
+    readership = db.Column(db.Integer, default=0)
 
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -40,17 +51,17 @@ class Article(db.Model):
     introduction = db.Column(db.String(500))
     chapters = db.relationship('Chapter', backref='article', lazy='dynamic')
 
-class BookShelf(db.Model):  # 修正：类名首字母大写
+class BookShelf(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     book_id = db.Column(db.Integer, db.ForeignKey('article.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     book_name = db.Column(db.String(140))
 
 class ReadingProgress(db.Model):
-    id = db.Column(db.Integer, primary_key=True)  # 单一主键
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))  # 外键关联用户
-    book_id = db.Column(db.Integer, db.ForeignKey('article.id'))  # 外键关联文章
-    last_read_chapter_id = db.Column(db.Integer, db.ForeignKey('chapter.id'))  # 外键关联章节
+    id = db.Column(db.Integer, primary_key=True) 
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    book_id = db.Column(db.Integer, db.ForeignKey('article.id'))
+    last_read_chapter_id = db.Column(db.Integer, db.ForeignKey('chapter.id'))
     last_read_date = db.Column(db.DateTime, default=datetime.utcnow)
     cumulative_reading_time = db.Column(db.Integer, default=0)
 
@@ -60,7 +71,7 @@ class Chapter(db.Model):
     content_path = db.Column(db.String(500))
     order = db.Column(db.Integer, default=0)
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'))
-    is_draft = db.Column(db.Boolean, default=True)  # 章节草稿状态
+    is_draft = db.Column(db.Boolean, default=True)  
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class KeyWord(db.Model):
@@ -72,7 +83,7 @@ class KeyWord(db.Model):
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     cat_name = db.Column(db.String(30))
-    cat_books = db.relationship('Article', backref='category', lazy='dynamic')  # 修正：定义关系字段
+    cat_books = db.relationship('Article', backref='category', lazy='dynamic')
 
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
