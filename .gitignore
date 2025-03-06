@@ -173,3 +173,7 @@ cython_debug/
 
 # Created databse file
 *.db
+
+
+# IDE stuff
+.vscode

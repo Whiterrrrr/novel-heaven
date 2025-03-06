@@ -8,6 +8,8 @@
   │   ├── routes/
   │   │   ├── auth/
   │   │   │   ├── __init__.py
+  │   │   │   ├── currency.py   # 货币系统
+  │   │   │   ├── history.py    # 历史阅读记录
   │   │   │   ├── routes.py
   │   │   │   └── forms.py
   │   │   ├── articles/

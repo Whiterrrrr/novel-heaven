@@ -17,3 +17,4 @@ def index():
 def dashboard():
     """用户仪表盘路由"""
     return render_template('main/dashboard.html')
+
