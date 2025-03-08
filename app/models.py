@@ -18,6 +18,9 @@ class User(UserMixin, db.Model):
     comments = db.relationship('Comment', backref='user', lazy='dynamic')
 
     reading_progresses = db.relationship('ReadingProgress', backref='author', lazy='dynamic')
+    def __init__(self, username, email):
+        self.username = username
+        self.email = email
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
