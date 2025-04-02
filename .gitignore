@@ -178,3 +178,5 @@ cython_debug/
 # IDE stuff
 .vscode
 .idea
+
+tmp/
