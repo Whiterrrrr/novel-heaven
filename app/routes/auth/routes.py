@@ -8,15 +8,16 @@ from app.models import User
 from app.routes.auth import auth_bp
 from app.routes.auth.forms import LoginForm, RegistrationForm, SettingsForm
 from datetime import datetime
-
+from functools import wraps
 
 def admin_required(fn):
+    @wraps(fn)
     @login_required
-    def wrapper(*args, **kwargs):
+    def decorated_function(*args, **kwargs):
         if current_user.role != 'admin':
             return jsonify(msg="Admins only!"), 403
         return fn(*args, **kwargs)
-    return wrapper
+    return decorated_function
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
