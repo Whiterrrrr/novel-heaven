@@ -7,6 +7,45 @@ from sqlalchemy.exc import SQLAlchemyError
 
 class DBOperations:
     @staticmethod
+    def update_user_role(user_id, new_role):
+        """
+        更新用户角色（管理员操作）
+        :param user_id: 目标用户ID
+        :param new_role: 新角色
+        :return: (success: bool, message: str, status_code: int)
+        """
+        try:
+            user = User.query.get(user_id)
+            if not user:
+                return False, "User not found", 404
+            
+            user.role = new_role
+            db.session.commit()
+            return True, "Role updated", 200
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            return False, f"Database error: {str(e)}", 500
+
+    @staticmethod
+    def delete_user(user_id):
+        """
+        删除用户（管理员操作）
+        :param user_id: 目标用户ID
+        :return: (success: bool, message: str, status_code: int)
+        """
+        try:
+            user = User.query.get(user_id)
+            if not user:
+                return False, "User not found", 404
+            
+            db.session.delete(user)
+            db.session.commit()
+            return True, "User deleted", 200
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            return False, f"Database error: {str(e)}", 500
+    
+    @staticmethod
     def register_new_user(username, email, password):
         """
         注册新用户

@@ -1,7 +1,7 @@
 from flask import Blueprint, request, g, jsonify
 from . import articles_bp
 from app.models import KeyWord, Article, db
-from app import not_, or_
+from sqlalchemy import not_, or_
 
 @articles_bp.route("/search_tags")
 def keytag_list(): # 输入关键词周围较高频率搜索词呈现

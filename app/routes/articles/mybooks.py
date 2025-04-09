@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from . import articles_bp
-from models import BookShelf, Article, User, ReadingProgress, Chapter,  db
+from models import BookShelf, Article, User, ReadingRecord, Chapter,  db
 from flask_login import login_required, current_user
 import random
 
@@ -79,7 +79,7 @@ def delete_book_from_shelf(book_id):
 def last_read_book():
     user = User.query.get(current_user)
     
-    last_progress = ReadingProgress.query.filter_by(user_id=current_user).order_by(ReadingProgress.last_read_time.desc()).first()
+    last_progress = ReadingRecord.query.filter_by(user_id=current_user).order_by(ReadingRecord.last_read_time.desc()).first()
 
     if not last_progress:
         return jsonify(msg = 'No record for last read'), 404

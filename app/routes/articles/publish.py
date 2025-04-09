@@ -1,8 +1,8 @@
-from models import Article, Chapter, request, db, jsonify
+from app.models import *
 from . import articles_bp
 from forms import ArticleForm, ChapterForm
 from flask_login import login_required, current_user
-from flask import render_template
+from flask import render_template, request, jsonify
 import datetime
 
 @articles_bp.route("/publish/submmit", methods=['GET', 'POST'])

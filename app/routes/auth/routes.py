@@ -114,20 +114,15 @@ def settings():
 @auth_bp.route('/api/user/roles/<int:user_id>', methods=['PUT'])
 @admin_required
 def update_role(user_id):
-    target_user = User.query.get(user_id)
-    if not target_user:
-        return jsonify(msg="User not found"), 404
-    target_user.role = request.json.get('role')
-    db.session.commit()
-    return jsonify(msg="Role updated")
+    success, message, status_code = DBOperations.update_user_role(
+        user_id=user_id,
+        new_role=request.json.get('role')
+    )
+    return jsonify(msg=message), status_code
 
 # 删除用户（管理员专用）
 @auth_bp.route('/api/user/<int:user_id>', methods=['DELETE'])
 @admin_required
 def delete_user(user_id):
-    target_user = User.query.get(user_id)
-    if not target_user:
-        return jsonify(msg="User not found"), 404
-    db.session.delete(target_user)
-    db.session.commit()
-    return jsonify(msg="User deleted"), 200
+    success, message, status_code = DBOperations.delete_user(user_id)
+    return jsonify(msg=message), status_code

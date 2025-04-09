@@ -1,10 +1,10 @@
 from datetime import datetime
 from flask import Blueprint, jsonify, request
 from app.models import SignIn, Transaction, Article
-from flask_login import login_user, logout_user, current_user, login_required
+from flask_login import current_user, login_required
 from app.routes.auth import auth_bp
 from app.routes.articles import articles_bp
-from app import db
+from app.models import db
 
 
 '''

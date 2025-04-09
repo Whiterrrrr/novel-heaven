@@ -1,8 +1,8 @@
 from flask import jsonify, request
 from app.models import ReadingRecord, Article, Chapter
-from flask_login import login_user, logout_user, current_user, login_required
+from flask_login import current_user, login_required
 from app.routes.auth import auth_bp
-from app import db
+from app.models import db
 
 @auth_bp.route('/reading_history', methods=['GET'])
 @login_required
