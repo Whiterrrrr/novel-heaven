@@ -1,5 +1,5 @@
-from flask import Blueprint, jsonify, request
-from app.models import ReadingProgress, Article, Chapter
+from flask import jsonify, request
+from app.models import ReadingRecord, Article, Chapter
 from flask_login import login_user, logout_user, current_user, login_required
 from app.routes.auth import auth_bp
 from app import db
@@ -12,8 +12,8 @@ def get_reading_history():
     per_page = request.args.get('per_page', 10, type=int)
 
     # 查询当前用户的阅读记录（按最后阅读时间倒序）
-    query = ReadingProgress.query.filter_by(author_id=current_user.id)\
-                                 .order_by(ReadingProgress.last_read_time.desc())
+    query = ReadingRecord.query.filter_by(author_id=current_user.id)\
+                                 .order_by(ReadingRecord.last_read_time.desc())
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     history_records = pagination.items
 
@@ -50,7 +50,7 @@ def get_reading_history():
 @login_required
 def delete_reading_history(record_id):
     # 确保用户只能删除自己的记录
-    record = ReadingProgress.query.filter_by(
+    record = ReadingRecord.query.filter_by(
         author_id=current_user.id,
         id=record_id
     ).first()

@@ -17,11 +17,16 @@ pip install -r requirements.txt
 flask shell
 ```
 
-### 4. 执行初始化命令（在打开的Python环境中）
+### 4. 执行本地数据库创建初始化命令（在打开的Python环境中）
 ```
-from app import db
+from app.models import db
 db.create_all()
 exit()
+```
+
+### 5. 运行app
+```
+python run.py
 ```
 
 ## Useful information

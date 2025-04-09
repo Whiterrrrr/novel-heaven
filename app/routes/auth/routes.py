@@ -1,13 +1,11 @@
 from flask import render_template, redirect, url_for, flash, jsonify, request, session
-from flask_login import login_user, logout_user, current_user, login_required
+from flask_login import logout_user, current_user, login_required
 from flask_wtf.csrf import validate_csrf
 from werkzeug.exceptions import BadRequest
 
-from app import db
-from app.models import User
+from app.models import *
 from app.routes.auth import auth_bp
 from app.routes.auth.forms import LoginForm, RegistrationForm, SettingsForm
-from datetime import datetime
 from functools import wraps
 
 def admin_required(fn):
@@ -23,23 +21,24 @@ def admin_required(fn):
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
+    
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user and user.check_password(form.password.data):
-            login_user(user, remember=form.remember_me.data)
-            user.last_seen = datetime.utcnow()
-            db.session.commit()
-            
-            # Daily login reward
-            if user.last_reward.date() < datetime.utcnow().date():
-                user.balance += 10
-                user.last_reward = datetime.utcnow()
-                db.session.commit()
-                flash('获得每日登录奖励10金币！', 'success')
+        success, user, message = DBOperations.authenticate_user(
+            email=form.email.data,
+            password=form.password.data,
+            remember=form.remember_me.data
+        )
+        
+        if success:
+            reward_given, amount = DBOperations.check_and_reward_daily_login(user)
+            if reward_given:
+                flash(f'获得每日登录奖励{amount}金币！', 'success')
             
             return redirect(url_for('main.dashboard'))
-        flash('无效的用户名或密码', 'danger')
+        
+        flash(message, 'danger')
+    
     return render_template('auth/login.html', title='登录', form=form)
 
 
@@ -67,38 +66,46 @@ def logout():
 def register():
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
-        user.set_password(form.password.data)
-        db.session.add(user)
-        db.session.commit()
-        flash('注册成功！', 'success')
-        return redirect(url_for('auth.login'))
+        success, user, message = DBOperations.register_new_user(
+            username=form.username.data,
+            email=form.email.data,
+            password=form.password.data
+        )
+        
+        if success:
+            flash(message, 'success')
+            return redirect(url_for('auth.login'))
+        else:
+            flash(message, 'danger')
+    
     return render_template('auth/register.html', title='注册', form=form)
 
 
 @auth_bp.route('/settings', methods=['GET', 'PUT'])
-@login_required  # 确保用户已登录
+@login_required
 def settings():
-    form = SettingsForm(obj=current_user)  # 用当前用户数据填充表单
+    form = SettingsForm(obj=current_user)
 
     if form.validate_on_submit():
-        if User.query.filter(User.username == form.username.data, User.id != current_user.id).first():
-            flash('Username already taken!', 'danger')
-            return redirect(url_for('auth.settings'))
-
-        if User.query.filter(User.email == form.email.data, User.id != current_user.id).first():
-            flash('Email already registered!', 'danger')
-            return redirect(url_for('auth.settings'))
-
-        current_user.username = form.username.data
-        current_user.email = form.email.data
-        current_user.bio = form.bio.data
-
+        update_data = {
+            'username': form.username.data,
+            'email': form.email.data,
+            'bio': form.bio.data
+        }
+        
         if form.password.data:
-            current_user.set_password(form.password.data)
+            update_data['password'] = form.password.data
 
-        db.session.commit()
-        flash('Settings updated!', 'success')
+        success, message = DBOperations.update_user_settings(
+            user_id=current_user.id,
+            update_data=update_data
+        )
+
+        if success:
+            flash(message, 'success')
+        else:
+            flash(message, 'danger')
+        
         return redirect(url_for('auth.settings'))
 
     return render_template('auth/settings.html', form=form)
