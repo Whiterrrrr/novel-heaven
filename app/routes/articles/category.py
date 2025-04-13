@@ -1,7 +1,32 @@
 from flask import Blueprint, request, g, jsonify
 from . import articles_bp
-from models import Category, Article, db
+from app.models import DBOperations
 
+class CategoryManager():
+    def __init__(self,data):
+        self.data = data
+    
+    def get_articles_by_category(self):
+        category_id = self.data['category_id'] if 'category_id' in self.data.keys() else None
+        category_name = self.data['category_name'] if 'category_name' in self.data.keys() else None
+        limit = self.data['limit'] if 'limit' in self.data.keys() else 20
+        offset = self.data['offset'] if 'offset' in self.data.keys() else 0
+        
+        if not (category_id or category_name):
+            return -1
+        else:
+            return DBOperations.get_articles_by_category(category_id, category_name,limit, offset)
+    
+    def get_category_hot_list(self):
+        limit = self.data['limit'] if 'limit' in self.data.keys() else 10
+        
+        return DBOperations.get_category_hot_list(limit)
+    
+    
+    
+    
+    
+"""     
 @articles_bp.route("/book_category")
 def category_list(): # 所有类型的所有书籍
     categories = Category.query.options(db.joinedload(Category.books)).all()
@@ -24,41 +49,35 @@ def category_list(): # 所有类型的所有书籍
         result.append(category_data)
     
     return jsonify({"data": result})
+"""
     
     
     
+@articles_bp.route('/book_category')
+def get_books_by_category(): 
+    data = request.get_json()
+    manager = CategoryManager(data)
     
-@articles_bp.route('/book_category/<int:category_id>')
-def get_books_by_category(category_id): # 指明类型后书籍分页
-    page = request.args.get('page', 1, type=int)
-    page_size = request.args.get('pagesize', 10, type=int)
-    category_id = request.args.get('category_id', 0, type=int)
     
-    if not category_id:
-        return jsonify(msg = 'This category is not exist'), 400
+    articles = manager.get_articles_by_category()
     
-    category = Category.query.get(category_id)
-    cat_books = category.cat_books
+    if articles == -1:
+        return jsonify(msg = 'Non valid input'), 400
+    elif articles == []:
+        return jsonify(msg = 'No such category'), 404
+    elif articles == -2:
+        return jsonify(msg = 'Error')
     
-    books = cat_books.order_by(Article.likes.desc())
-        
-    pagination = books.paginate(page=page, per_page = page_size)
+    return jsonify([article.to_dict() for article in articles])
+
+@articles_bp.route('/book_category/hot_category')
+def get_hot_category_list(): 
+    data = request.get_json()
+    manager = CategoryManager(data)
     
-    books_data = [
-        {
-            "id": book.id,
-            "title": book.title,
-            "author": book.author,
-            "introduction": book.introduction,
-            "category_id": book.category_id,
-            "category_name":book.category_name
-        } for book in pagination.items
-    ]
+    hot_list = manager.get_category_hot_list()
     
-    return jsonify({
-        "category": {"id": category.id, "label": category.name},
-        "total_book": pagination.total, #总符合类型的book数
-        "books": books_data,
-        "total_pages": pagination.pages,
-        "current_page": page
-    })
+    if hot_list == []:
+        return jsonify(msg = 'Error')
+    else:
+        return jsonify([category.name for category in hot_list])

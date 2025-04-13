@@ -183,10 +183,54 @@ class DBOperations:
             return None
     
     @staticmethod
+    def create_user(username, email, password, gender=None):
+        if User.query.filter((User.username == username) | (User.email == email)).first():
+            return None
+        
+        new_user = User(
+            username=username,
+            email=email,
+            gender=gender,
+            joined_at=datetime.utcnow(),
+            last_seen=datetime.utcnow()
+        )
+        new_user.set_password(password)
+        
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+            return new_user
+        except SQLAlchemyError:
+            db.session.rollback()
+            return None
+
+    @staticmethod
+    def update_user_profile(user_id, **kwargs):
+        allowed_fields = {'username', 'email', 'gender', 'balance', 'is_author'}
+        updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
+        
+        user = User.query.get(user_id)
+        if not user:
+            return None
+        
+        try:
+            for key, value in updates.items():
+                setattr(user, key, value)
+            user.last_seen = datetime.utcnow()
+            db.session.commit()
+            return user
+        except SQLAlchemyError:
+            db.session.rollback()
+            return None
+
+    
+    
+    
+    
+    @staticmethod
     def get_latest_articles(limit=1):
         return Article.query.order_by(Article.latest_update_time.desc()).limit(limit).all()
             
-    
     @staticmethod
     def create_comment(user_id, article_id, content):
         try:
@@ -282,7 +326,7 @@ class DBOperations:
             } for c in query]
         except SQLAlchemyError:
             return []
-        
+          
     @staticmethod
     def get_bookshelf_data(user_id, with_article_info=False):
         try:
@@ -298,7 +342,7 @@ class DBOperations:
             
             return query.all()
         except SQLAlchemyError:
-            return []
+            return -2
         
     @staticmethod
     def get_chapter_data(chapter_id=None, article_id=None):
@@ -310,35 +354,7 @@ class DBOperations:
             return None
         except SQLAlchemyError:
             return None
-        
-    @staticmethod
-    def update_chapter(chapter_id, update_data):
-        try:
-            chapter = Chapter.query.get(chapter_id)
-            if not chapter:
-                return None
-
-            allowed_fields = {
-                'chapter_name', 'word_count', 
-                'text_path', 'is_draft', 'status'
-            }
-            updates = {k: v for k, v in update_data.items() if k in allowed_fields}
-
-            for key, value in updates.items():
-                setattr(chapter, key, value)
-            
-            article = Article.query.get(chapter.article_id)
-            if article:
-                article.latest_update_time = datetime.utcnow()
-                if 'chapter_name' in updates:
-                    article.latest_update_chapter_name = updates['chapter_name']
-            
-            db.session.commit()
-            return chapter
-        except SQLAlchemyError:
-            db.session.rollback()
-            return None
-
+    
     @staticmethod
     def get_articles_by_category(category_id=None, category_name=None, limit=20, offset=0):
         try:
@@ -358,7 +374,7 @@ class DBOperations:
             
             return articles
         except SQLAlchemyError:
-            return []
+            return -2
             
     @staticmethod
     def get_category_hot_list(limit=10):
@@ -385,79 +401,38 @@ class DBOperations:
             return None
 
     @staticmethod
-    def create_user(username, email, password, gender=None):
-        if User.query.filter((User.username == username) | (User.email == email)).first():
-            return None
-        
-        new_user = User(
-            username=username,
-            email=email,
-            gender=gender,
-            joined_at=datetime.utcnow(),
-            last_seen=datetime.utcnow()
-        )
-        new_user.set_password(password)
-        
-        try:
-            db.session.add(new_user)
-            db.session.commit()
-            return new_user
-        except SQLAlchemyError:
-            db.session.rollback()
-            return None
-
-    @staticmethod
-    def update_user_profile(user_id, **kwargs):
-        allowed_fields = {'username', 'email', 'gender', 'balance', 'is_author'}
-        updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
-        
-        user = User.query.get(user_id)
-        if not user:
-            return None
-        
-        try:
-            for key, value in updates.items():
-                setattr(user, key, value)
-            user.last_seen = datetime.utcnow()
-            db.session.commit()
-            return user
-        except SQLAlchemyError:
-            db.session.rollback()
-            return None
-
-    @staticmethod
     def get_reading_history(user_id):
-        return ReadingRecord.query.filter_by(user_id=user_id).all()
+        try:
+            return ReadingRecord.query.filter_by(user_id=user_id).all()
+        except SQLAlchemyError as e:
+            return -1
 
     @staticmethod
-    def update_reading_progress(user_id, article_id, chapter_id, duration_hours):
+    def add_to_bookshelf(user_id, article_id):
         try:
-            record = ReadingRecord.query.filter_by(
+            article = Article.query.get(article_id)
+            if not article:
+                return None, False
+            
+            existing = BookShelf.query.filter_by(
                 user_id=user_id,
                 article_id=article_id
             ).first()
-
-            if not record:
-                article = Article.query.get(article_id)
-                if not article:
-                    return None
-                
-                record = ReadingRecord(
-                    user_id=user_id,
-                    article_id=article_id,
-                    article_name=article.article_name,
-                    latest_reading_chapter_id=chapter_id,
-                    cumulative_reading_time=duration_hours
-                )
-                db.session.add(record)
-            else:
-                record.update_reading(chapter_id, duration_hours)
             
+            if existing:
+                return existing, True
+            
+            new_entry = BookShelf(
+                user_id=user_id,
+                article_id=article_id,
+                article_name=article.article_name
+            )
+            db.session.add(new_entry)
             db.session.commit()
-            return record
+            return new_entry, False
         except SQLAlchemyError:
             db.session.rollback()
-            return None
+            return None, False
 
     @staticmethod
     def create_article(author_id, article_data):
@@ -504,28 +479,63 @@ class DBOperations:
             return None
 
     @staticmethod
-    def add_to_bookshelf(user_id, article_id):
+    def update_chapter(chapter_id, update_data):
         try:
-            article = Article.query.get(article_id)
-            if not article:
+            chapter = Chapter.query.get(chapter_id)
+            if not chapter:
                 return None
+
+            allowed_fields = {
+                'chapter_name', 'word_count', 
+                'text_path', 'is_draft', 'status'
+            }
+            updates = {k: v for k, v in update_data.items() if k in allowed_fields}
+
+            for key, value in updates.items():
+                setattr(chapter, key, value)
             
-            existing = BookShelf.query.filter_by(
+            article = Article.query.get(chapter.article_id)
+            if article:
+                article.latest_update_time = datetime.utcnow()
+                if 'chapter_name' in updates:
+                    article.latest_update_chapter_name = updates['chapter_name']
+            
+            db.session.commit()
+            return chapter
+        except SQLAlchemyError:
+            db.session.rollback()
+            return None
+
+
+
+
+
+    @staticmethod
+    def update_reading_progress(user_id, article_id, chapter_id, duration_hours):
+        try:
+            record = ReadingRecord.query.filter_by(
                 user_id=user_id,
                 article_id=article_id
             ).first()
+
+            if not record:
+                article = Article.query.get(article_id)
+                if not article:
+                    return None
+                
+                record = ReadingRecord(
+                    user_id=user_id,
+                    article_id=article_id,
+                    article_name=article.article_name,
+                    latest_reading_chapter_id=chapter_id,
+                    cumulative_reading_time=duration_hours
+                )
+                db.session.add(record)
+            else:
+                record.update_reading(chapter_id, duration_hours)
             
-            if existing:
-                return existing
-            
-            new_entry = BookShelf(
-                user_id=user_id,
-                article_id=article_id,
-                article_name=article.article_name
-            )
-            db.session.add(new_entry)
             db.session.commit()
-            return new_entry
+            return record
         except SQLAlchemyError:
             db.session.rollback()
             return None
@@ -555,3 +565,49 @@ class DBOperations:
         except SQLAlchemyError:
             db.session.rollback()
             return False
+    
+    
+    @staticmethod
+    def make_like(article_id):
+        pass
+    @staticmethod
+    def delete_book_from_shelf(user_id, article_id):
+        pass
+    
+    @staticmethod
+    def get_latest_reading(user_id):
+        pass
+    
+    @staticmethod
+    def create_chapter(chapter_id, chapter_data):
+        pass
+    
+    @staticmethod
+    def delete_article(article_id)-> bool:
+        pass
+    
+    @staticmethod
+    def delete_chapter(chapter_id)-> bool: 
+        pass
+    
+    @staticmethod
+    def keytag_list(search_keyword, limit) -> list[KeyWord]:
+        """
+        keytag包含两类，一类是本身就是hot，一类是tag中包含search_keyword
+        我感觉大致是这样子写： keytags = KeyWord.query.filter(or_(KeyWord.is_hot == True, KeyWord.keyword.contains(search_word))).limit(5)
+        """
+        pass
+    
+    @staticmethod
+    def search_books(key_word,page,page_size):
+        """
+        返回值：list(Article), article_counts, current_page, total_pages
+        """
+        pass
+    
+    @staticmethod
+    def recommend_hot_articles(limit=5):
+        """按热度推荐（阅读量+点赞量加权）
+        我感觉大致是这样子写：return Article.query.order_by((Article.views * 0.7 + Article.likes * 0.3).desc()).limit(limit).all()
+        
+        """

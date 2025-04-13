@@ -42,7 +42,7 @@ class Comment(db.Model):
     context = db.Column(db.Text, nullable=False)
     time = db.Column(
         db.DateTime, 
-        default=datetime.utcnow,
+        default=datetime.now,
         index=True
     )
     

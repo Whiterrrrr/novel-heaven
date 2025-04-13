@@ -1,111 +1,212 @@
 from app.models import *
 from . import articles_bp
-from forms import ArticleForm, ChapterForm
+# from forms import ArticleForm, ChapterForm
 from flask_login import login_required, current_user
 from flask import render_template, request, jsonify
 import datetime
+from abc import ABC, abstractmethod
 
-@articles_bp.route("/publish/submmit", methods=['GET', 'POST'])
-def publish_article():
+class PublishManager(ABC):
+    def __init__(self, data):
+        self.data = data
+        
+    @abstractmethod
+    def create(self):
+        pass
+    
+    @abstractmethod
+    def update(self):
+        pass
+    
+    @abstractmethod
+    def delete(self):
+        pass
+    
+    
+    
+    
+class PublishArticle(PublishManager):
+    def __init__(self,data):
+        super().__init__(data)
+        
+    def create(self):
+        try:
+            author_id = self.data['author_id']
+            article_data = self.data['article_data']
+        except:
+            return -1
+        
+        return DBOperations.create_article(author_id, article_data)
+    
+    def update(self):
+        """
+        try:
+            form = ArticleForm(data={
+            'title': self.data.get('article_title'),
+            'category': self.data.get('category')
+        })
+        """
+        try:
+            article_id = self.data.get('article_id')
+            update_data = self.data.get('update_data')
+        except:
+            return -1
+        
+        return DBOperations.update_article(article_id, update_data)
+    
+    def delete(self):
+        try:
+            article_id = self.data.get('article_id')
+        except:
+            return -1
+        
+        return DBOperations.delete_article(article_id)
+    
+    
+class PublishChapter(PublishManager):
+    def __init__(self,data):
+        super().__init__(data)
+        
+    def create(self):
+        try:
+            chapter_id = self.data['chapter_id']
+            chapter_data = self.data['chapter_data']
+        except:
+            return -1
+        
+        return DBOperations.create_chapter(chapter_id, chapter_data)
+    
+    def update(self):
+        try:
+            chapter_id = self.data.get('article_id')
+            update_data = self.data.get('update_data')
+        except:
+            return -1
+        
+        return DBOperations.update_chapter(chapter_id, update_data)
+    
+    def delete(self):
+        try:
+            chapter_id = self.data.get('chapter_id')
+        except:
+            return -1
+        
+        return DBOperations.delete_chapter(chapter_id)      
+    
+    
+          
+@articles_bp.route("/publish/article/update", methods= ['POST'])
+def update_article():
     data = request.get_json()
+    manager = PublishArticle(data)
     
-    form = ArticleForm(data={
-        'title': data.get('article_title'),
-        'category': data.get('category')
-    })
-    article_id = data.get('article_id')
-    
-    article = Article.query.filter_by(
-        id=article_id,
-        user_id=current_user.id,
-        is_draft=True
-    ).first()
+    article = manager.update()
     
     if not article:
         return jsonify(msg = 'Article is not exist'), 404
-    
-    try:
-        # 更新文章状态
-        article.is_draft = False
-        article.published_at = datetime.utcnow()
-        
-        # 更新关联章节状态（如果有章节草稿）
-        Chapter.query.filter_by(article_id=article.id, is_draft=True).update(
-            {"is_draft": False},
-            synchronize_session=False
-        )
-        
-        db.session.commit()
-        
-        return jsonify({
-            "code": 200,
-            "msg": "Successfully submmit",
-            "published_at": article.published_at.isoformat(),
-            "article_url": f"/articles/{article.id}"  # 文章打开详情页的路径
-        })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify(msg = 'Error sending'), 500
-    
-    
-@articles_bp.route("/publish/create", methods=['POST'])
-def create_new_article():
-    
-    new_article = Article(
-        title = request.json.get('title'),
-        user_id = current_user.id,
-        category = request.json.get('category'),
-        is_draft = True
-    )
-    db.session.add(new_article)
-    db.session.commit()
+    elif article == -1:
+        return jsonify(msg = 'No valid input')
     
     return jsonify({
-        "code": 201,
-        "novel_id": new_article.id,
-        "edit_url": f"/editor/{new_article.id}" # 跳转到编辑页面，需要editor.html
+        "msg": "Successfully update",
+        "published_at": article.latest_update_time.isoformat()
+       # "article_url": f"/articles/{article.id}"  # 文章打开详情页的路径
     })
-
-
-@articles_bp.route("/publish/chapter_make", methods=['POST'])
-@login_required
-def create_new_chapter():
-    request_data = request.get_json() 
     
-    article_id = request_data.get('article_id')
+@articles_bp.route("/publish/article/create", methods=['POST'])
+def create_new_article():
+    data = request.get_json()
+    manager = PublishArticle(data)
+    
+    new_article = manager.create()
+    
+    if not new_article:
+        return jsonify(msg = 'Error')
+    elif new_article == -1:
+        return jsonify(msg = 'Non valid input')
+    else:
+        return jsonify({
+            "novel_id": new_article.id,
+            "edit_url": f"/editor/article/{new_article.id}" # 跳转到编辑页面，需要editor.html
+        })
 
+@articles_bp.route("/delete/article", methods=['POST'])
+#@login_required
+def delete_article():
+    data = request.get_json()
+    manager = PublishArticle(data)
+    
+    status = manager.delete()
+    
+    if status == -1:
+        return jsonify(msg = 'Non valid article_id')
+    elif not status:
+        return jsonify(msg = 'Article chosen to delete is not exist'), 400
+    else:
+        return jsonify(msg = 'Successfully delete')
+    
+    
+@articles_bp.route("/publish/chapter/create", methods=['POST'])
+@login_required
+def create_chapter():
+    data = request.get_json() 
+    manager = PublishChapter(data)
+    
+    """
     form = ChapterForm(data={
-        'chapter_title': request_data.get('chapter_title'),
-        'content': request_data.get('content')
+        'chapter_title': data.get('chapter_title'),
+        'content': data.get('content')
     })
     
     if form.validate() and article_id:
-
-        article = Article.query.filter_by(id = article_id, user_id = current_user.id).first()
-        if not article:
-            return jsonify(msg = "Error operation"), 403
- 
-        max_order = Chapter.query.filter_by(article_id=article.id).with_entities(db.func.max(Chapter.order)).scalar() or 0
+    """
+    new_chapter = manager.create()
+    
+    if not new_chapter:
+        return jsonify(msg = 'Error')
+    elif new_chapter == -1:
+        return jsonify(msg = 'Non valid input')
+    else:
+        return jsonify({
+            "novel_id": new_chapter.id,
+            "edit_url": f"/editor/chapter/{new_chapter.id}" # 跳转到编辑页面，需要editor.html
+        })
         
-        chapter = Chapter(
-            title=request_data.get('title'),
-            content=request_data.get('content'),
-            order=max_order + 1,
-            article_id=article.id,
-            is_draft=True
-        )
-            
-        db.session.add(chapter)
-        db.session.commit()
+@articles_bp.route("/publish/chapter/update", methods= ['POST'])
+def update_chapter():
+    data = request.get_json()
+    manager = PublishChapter(data)
+    
+    article = manager.update()
+    
+    if not article:
+        return jsonify(msg = 'Article is not exist'), 404
+    elif article == -1:
+        return jsonify(msg = 'No valid input')
     
     return jsonify({
-        "code": 200,
-        "chapter_id": chapter.id,
-        "order": chapter.order
+        "msg": "Successfully update",
+        "published_at": article.latest_update_time.isoformat()
+       # "article_url": f"/articles/{article.id}"  # 文章打开详情页的路径
     })
+    
+@articles_bp.route("/delete/chapter", methods=['POST'])
+@login_required
+def delete_chapter():
+    data = request.get_json()
+    manager = PublishChapter(data)
+    
+    status = manager.delete()
+    
+    if status == -1:
+        return jsonify(msg = 'Non valid chapter_id')
+    elif not status:
+        return jsonify(msg = 'Chapter chosen to delete is not exist'), 400
+    else:
+        return jsonify(msg = 'Successfully delete')
+    
 
-
-@articles_bp.route("/editor/<int:article_id>")
+@articles_bp.route("/editor/article/<int:article_id>")
 @login_required
 def article_editor(article_id):
 
@@ -120,29 +221,14 @@ def article_editor(article_id):
         article=article,
         chapters=chapters
     )
-    
 
-@articles_bp.route("/delete/chapter/<chapter_id>", methods=['POST'])
+@articles_bp.route("/editor/chapter/<int:chapter_id>")
 @login_required
-def delete_chapter(chapter_id):
-    chapter_select = Chapter.query.filter_by(user_id = current_user, chapter_id = chapter_id).first()
+def chapter_editor(chapter_id):
     
-    if not chapter_select:
-        return jsonify(msg = 'Chapter chosen to delete is not in your personal editing space'), 400
-    else:
-        db.session.delete(chapter_select)
-        db.session.commit()
-        return jsonify(msg = 'Successfully delete')
-
-
-@articles_bp.route("/delete/article/<article_id>", methods=['POST'])
-@login_required
-def delete_article(article_id):
-    article_select = Article.query.filter_by(user_id = current_user, article_id = article_id).first()
+    chapter = Chapter.query.filter_by(chapter_id=chapter_id)
     
-    if not article_select:
-        return jsonify(msg = 'Article chosen to delete is not in your personal editor'), 400
-    else:
-        db.session.delete(article_select)
-        db.session.commit()
-        return jsonify(msg = 'Successfully delete')
+    return render_template('editor_chapter.html', 
+        chapter=chapter
+    )
+    

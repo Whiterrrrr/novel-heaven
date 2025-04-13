@@ -206,7 +206,17 @@ class ReadingRecord(db.Model):
         self.latest_reading_chapter_id = chapter_id
         self.cumulative_reading_time += duration_hours
         self.latest_reading_time = datetime.utcnow()
-        
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'article_id': self.article_id,
+            'article_name':self.article_name,
+            'latest_reading_chapter_id':self.latest_reading_chapter_id,
+            'cumulative_reading_time':self.cumulative_reading_time,
+            'latest_reading_time': self.latest_reading_time.isoformat()
+        }
         
 class BookShelf(db.Model):
     __tablename__ = 'book_shelf'
@@ -239,3 +249,10 @@ class BookShelf(db.Model):
     
     def __repr__(self):
         return f'<BookShelf user={self.user_id} article={self.article_id}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'article_id':self.article_id
+        }
