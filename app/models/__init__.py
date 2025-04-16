@@ -609,5 +609,4 @@ class DBOperations:
     def recommend_hot_articles(limit=5):
         """按热度推荐（阅读量+点赞量加权）
         我感觉大致是这样子写：return Article.query.order_by((Article.views * 0.7 + Article.likes * 0.3).desc()).limit(limit).all()
-        
         """
