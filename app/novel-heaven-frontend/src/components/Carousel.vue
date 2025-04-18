@@ -62,19 +62,20 @@
   
   <style scoped>
   .carousel {
-    position: fixed;
     width: 100%;
-    height: 500px;
+    height: 100px;
     overflow: hidden;
     top: 0;
     left: 0;
-    z-index: -1;
+    z-index: 10;
   }
   
   .carousel-image {
     width: 100%;
-    height: 90%;
+    height: 100%;
     object-fit: cover;
+    max-width: 1600px; 
+    max-height: 450px;
     position: absolute;
     left: 0;
     top: 0;

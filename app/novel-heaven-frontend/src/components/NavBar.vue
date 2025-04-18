@@ -1,9 +1,8 @@
 <template>
-  <nav class="navbar">
+  <nav v-if="!isNovelContentPage" class="navbar" :class="['nav-default', { scrolled: isScrolled, grayBackground: (isNovelDetailPage || isLibraryPage) }]">
     <!-- Logo -->
     <div class="nav-left">
-        <span>Novel Heaven</span>
-      
+      <span>Novel Heaven</span>
     </div>
 
     <!-- 导航，搜索框 ，用户登录 -->
@@ -44,19 +43,50 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useUserStore } from '@/store/index';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 
 const userStore = useUserStore();
 const searchQuery = ref('');
 const router = useRouter();
+const route = useRoute();
 
+// 背景颜色状态
+const isScrolled = ref(false);
+
+// 判断当前是否为 NovelDetail 页
+const isNovelDetailPage = computed(() => {
+  return route.name === 'NovelDetail';
+});
+const isLibraryPage = computed(() => {
+  return route.name === 'Library';
+});
+const isNovelContentPage = computed(() => {
+  return route.name === 'NovelContent';
+});
 const search = () => {
   if (searchQuery.value.trim()) {
     router.push(`/search?q=${searchQuery.value}`);
   }
 };
+
+// 监听滚动事件
+const handleScroll = () => {
+  if (window.scrollY > 50) { // 页面滚动超过50px，导航栏背景变为白色
+    isScrolled.value = true;
+  } else {
+    isScrolled.value = false;
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll); // 监听滚动
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll); // 移除滚动事件监听
+});
 </script>
 
 <style scoped>
@@ -67,9 +97,25 @@ const search = () => {
   align-items: center;
   padding: 10px 20px;
   background: transparent; 
-  width:95%;
+  width: 100%;
   z-index: 1000;
-  position: absolute;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  transition: background-color 0.3s ease; /* 平滑过渡 */
+}
+
+/* 如果页面滚动超过50px，背景会变为白色 */
+.navbar.scrolled {
+  background: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* 如果是 NovelDetail 页面，背景颜色为灰色 */
+.navbar.grayBackground {
+  background-color: #f5f5f5; /* 灰色背景 */
+  box-shadow: none;
 }
 
 /* 左侧 Logo */
@@ -80,12 +126,12 @@ const search = () => {
   font-family:"Brush Script MT",cursive;
 }
 
-
 /* 右侧 导航 + 搜索 + 用户登录 */
 .nav-right {
   display: flex;
   align-items: center;
   gap: 40px;
+  margin-right: 50px;
 }
 
 /* 导航菜单 */
@@ -140,7 +186,6 @@ const search = () => {
   outline: none; 
 }
 
-
 .nav-search input::placeholder {
   color: #c8bfb2; 
 }
@@ -159,6 +204,7 @@ const search = () => {
   width: 18px;
   height: 18px;
 }
+
 /* 用户中心 / 登录注册 */
 .nav-user {
   display: flex;
