@@ -65,7 +65,8 @@ class Article(db.Model):
     comments = db.relationship(
         'Comment', 
         back_populates='article',
-        lazy='dynamic'
+        lazy='dynamic',
+        cascade='all, delete-orphan'
     )
     
     def __repr__(self):

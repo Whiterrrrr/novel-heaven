@@ -4,6 +4,7 @@ from .book import *
 from .other import *
 from datetime import *
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import or_
 
 class DBOperations:
     @staticmethod
@@ -506,10 +507,6 @@ class DBOperations:
             db.session.rollback()
             return None
 
-
-
-
-
     @staticmethod
     def update_reading_progress(user_id, article_id, chapter_id, duration_hours):
         try:
@@ -569,44 +566,176 @@ class DBOperations:
     
     @staticmethod
     def make_like(article_id):
-        pass
+        """
+        文章点赞
+        :param article_id: 文章ID
+        :return: (success: bool, likes: int)
+        """
+        try:
+            article = Article.query.get(article_id)
+            if not article:
+                return False, 0
+            
+            article.likes += 1
+            db.session.commit()
+            return True, article.likes
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False, 0
+        
     @staticmethod
     def delete_book_from_shelf(user_id, article_id):
-        pass
+        """
+        从书架移除书籍
+        :return: 是否成功
+        """
+        try:
+            deleted = BookShelf.query.filter_by(
+                user_id=user_id,
+                article_id=article_id
+            ).delete()
+            db.session.commit()
+            return deleted > 0
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False
     
     @staticmethod
     def get_latest_reading(user_id):
-        pass
-    
-    @staticmethod
-    def create_chapter(chapter_id, chapter_data):
-        pass
-    
-    @staticmethod
-    def delete_article(article_id)-> bool:
-        pass
-    
-    @staticmethod
-    def delete_chapter(chapter_id)-> bool: 
-        pass
-    
-    @staticmethod
-    def keytag_list(search_keyword, limit) -> list[KeyWord]:
         """
-        keytag包含两类，一类是本身就是hot，一类是tag中包含search_keyword
-        我感觉大致是这样子写： keytags = KeyWord.query.filter(or_(KeyWord.is_hot == True, KeyWord.keyword.contains(search_word))).limit(5)
+        获取用户最近阅读记录
+        :return: ReadingRecord对象或None
         """
-        pass
+        try:
+            return ReadingRecord.query.filter_by(
+                user_id=user_id
+            ).order_by(
+                ReadingRecord.latest_reading_time.desc()
+            ).first()
+        except SQLAlchemyError:
+            return None
     
     @staticmethod
-    def search_books(key_word,page,page_size):
+    def create_chapter(article_id, chapter_data):
         """
-        返回值：list(Article), article_counts, current_page, total_pages
+        创建章节
+        :param article_id: 所属文章ID
+        :param chapter_data: 包含章节数据的字典
+        :return: (success: bool, chapter: Chapter)
         """
-        pass
+        try:
+            chapter = Chapter(
+                article_id=article_id,
+                chapter_name=chapter_data.get('chapter_name'),
+                word_count=chapter_data.get('word_count', 0),
+                text_path=chapter_data.get('text_path'),
+                status=chapter_data.get('status', 'draft')
+            )
+            db.session.add(chapter)
+            
+            # 更新文章的章节数和最后更新时间
+            article = Article.query.get(article_id)
+            if article:
+                article.chapter_number += 1
+                article.latest_update_time = datetime.utcnow()
+                article.latest_update_chapter_name = chapter.chapter_name
+            
+            db.session.commit()
+            return True, chapter
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False, None
+        
+    @staticmethod
+    def delete_article(article_id):
+        """
+        删除文章（级联删除关联章节）
+        :return: 是否成功
+        """
+        try:
+            deleted = Article.query.filter_by(id=article_id).delete()
+            db.session.commit()
+            return deleted > 0
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False
+    
+    @staticmethod
+    def delete_chapter(chapter_id):
+        """
+        删除章节
+        :return: 是否成功
+        """
+        try:
+            # 先获取章节信息用于更新文章状态
+            chapter = Chapter.query.get(chapter_id)
+            if not chapter:
+                return False
+            
+            # 删除章节
+            deleted = Chapter.query.filter_by(id=chapter_id).delete()
+            
+            # 更新文章信息
+            article = Article.query.get(chapter.article_id)
+            if article:
+                article.chapter_number -= 1
+                article.latest_update_time = datetime.utcnow()
+            
+            db.session.commit()
+            return deleted > 0
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False
+    
+    
+    @staticmethod
+    def keytag_list(search_keyword, limit=5):
+        """
+        获取关键词标签列表
+        :param search_keyword: 搜索关键词
+        :param limit: 返回数量
+        :return: List[KeyWord]
+        """
+        try:
+            return KeyWord.query.filter(
+                or_(
+                    KeyWord.is_hot == True,
+                    KeyWord.keyword.contains(search_keyword)
+                )
+            ).limit(limit).all()
+        except SQLAlchemyError:
+            return []
+    
+    @staticmethod
+    def search_books(key_word, page=1, page_size=10):
+        """
+        搜索文章
+        :return: (articles: List[Article], total: int, current_page: int, total_pages: int)
+        """
+        try:
+            query = Article.query.filter(
+                Article.article_name.contains(key_word) |
+                Article.intro.contains(key_word)
+            )
+            pagination = query.paginate(page=page, per_page=page_size, error_out=False)
+            return (
+                pagination.items,
+                pagination.total,
+                pagination.page,
+                pagination.pages
+            )
+        except SQLAlchemyError:
+            return [], 0, 1, 1
     
     @staticmethod
     def recommend_hot_articles(limit=5):
-        """按热度推荐（阅读量+点赞量加权）
-        我感觉大致是这样子写：return Article.query.order_by((Article.views * 0.7 + Article.likes * 0.3).desc()).limit(limit).all()
         """
+        推荐热门文章（阅读量权重70%，点赞量30%）
+        :return: List[Article]
+        """
+        try:
+            return Article.query.order_by(
+                (Article.views * 0.7 + Article.likes * 0.3).desc()
+            ).limit(limit).all()
+        except SQLAlchemyError:
+            return []
