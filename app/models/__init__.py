@@ -45,31 +45,6 @@ class DBOperations:
         except SQLAlchemyError as e:
             db.session.rollback()
             return False, f"Database error: {str(e)}", 500
-    
-    @staticmethod
-    def register_new_user(username, email, password):
-        """
-        注册新用户
-        :param username: 用户名
-        :param email: 邮箱
-        :param password: 明文密码
-        :return: (success: bool, user: User | None, message: str)
-        """
-        try:
-            if User.query.filter_by(username=username).first():
-                return False, None, "用户名已被使用"
-            if User.query.filter_by(email=email).first():
-                return False, None, "邮箱已被注册"
-
-            user = User(username=username, email=email)
-            user.set_password(password)
-            
-            db.session.add(user)
-            db.session.commit()
-            return True, user, "注册成功"
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            return False, None, f"注册失败: {str(e)}"
 
     @staticmethod
     def update_user_settings(user_id, update_data):
@@ -98,7 +73,7 @@ class DBOperations:
                 ).first():
                     return False, "邮箱已被注册"
 
-            allowed_fields = {'username', 'email', 'bio', 'password'}
+            allowed_fields = {'username', 'email', 'gender', 'password', 'is_author', 'joined_at', 'last_seen', 'balance'}
             for field, value in update_data.items():
                 if field in allowed_fields:
                     if field == 'password':
@@ -204,29 +179,6 @@ class DBOperations:
         except SQLAlchemyError:
             db.session.rollback()
             return None
-
-    @staticmethod
-    def update_user_profile(user_id, **kwargs):
-        allowed_fields = {'username', 'email', 'gender', 'balance', 'is_author'}
-        updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
-        
-        user = User.query.get(user_id)
-        if not user:
-            return None
-        
-        try:
-            for key, value in updates.items():
-                setattr(user, key, value)
-            user.last_seen = datetime.utcnow()
-            db.session.commit()
-            return user
-        except SQLAlchemyError:
-            db.session.rollback()
-            return None
-
-    
-    
-    
     
     @staticmethod
     def get_latest_articles(limit=1):
@@ -437,29 +389,47 @@ class DBOperations:
 
     @staticmethod
     def create_article(author_id, article_data):
+        """
+        创建文章并同步更新创作列表
+        """
         try:
+            author = User.query.get(author_id)
+            if not author or not author.is_author:
+                raise ValueError("无效的作者ID或用户非作者身份")
+
+            now = datetime.utcnow()
+            
             article = Article(
                 author_id=author_id,
                 **article_data,
-                create_time=datetime.utcnow(),
-                latest_update_time=datetime.utcnow()
+                create_time=now, 
+                latest_update_time=now,
+                latest_update_chapter_name="未发布章节"
             )
             db.session.add(article)
             db.session.flush()
-            
+
             creation_list = CreationList(
                 author_id=author_id,
                 article_id=article.id,
                 article_name=article.article_name,
-                create_date=datetime.utcnow().date(),
-                latest_update_time=datetime.utcnow().date()
+                create_date=now.date(),
+                latest_update_time=now.date(),
+                latest_update_chapter_name=article.latest_update_chapter_name,  # 同步章节状态
+                views=0
             )
             db.session.add(creation_list)
-            
+
             db.session.commit()
             return article
-        except SQLAlchemyError:
+
+        except ValueError as e:
             db.session.rollback()
+            print(f"业务逻辑错误: {str(e)}")
+            return None
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            print(f"数据库操作异常: {str(e)}")
             return None
 
     @staticmethod
@@ -538,22 +508,6 @@ class DBOperations:
             return None
 
     @staticmethod
-    def create_comment(user_id, article_id, content):
-        try:
-            new_comment = Comment(
-                user_id=user_id,
-                article_id=article_id,
-                context=content,
-                time=datetime.utcnow()
-            )
-            db.session.add(new_comment)
-            db.session.commit()
-            return new_comment
-        except SQLAlchemyError:
-            db.session.rollback()
-            return None
-
-    @staticmethod
     def delete_record(record):
         try:
             db.session.delete(record)
@@ -618,10 +572,7 @@ class DBOperations:
     @staticmethod
     def create_chapter(article_id, chapter_data):
         """
-        创建章节
-        :param article_id: 所属文章ID
-        :param chapter_data: 包含章节数据的字典
-        :return: (success: bool, chapter: Chapter)
+        创建章节并同步更新创作列表
         """
         try:
             chapter = Chapter(
@@ -629,21 +580,50 @@ class DBOperations:
                 chapter_name=chapter_data.get('chapter_name'),
                 word_count=chapter_data.get('word_count', 0),
                 text_path=chapter_data.get('text_path'),
-                status=chapter_data.get('status', 'draft')
+                status=chapter_data.get('status', 'draft'),
+                latest_update_time=datetime.utcnow() 
             )
             db.session.add(chapter)
-            
-            # 更新文章的章节数和最后更新时间
-            article = Article.query.get(article_id)
-            if article:
-                article.chapter_number += 1
-                article.latest_update_time = datetime.utcnow()
-                article.latest_update_chapter_name = chapter.chapter_name
-            
+            db.session.flush()
+
+            article = db.session.get(Article, article_id)
+            if not article:
+                raise ValueError("关联文章不存在")
+
+            article.chapter_number = Article.chapter_number + 1
+            article.latest_update_time = datetime.utcnow()
+            article.latest_update_chapter_name = chapter.chapter_name
+
+            creation_list = db.session.execute(
+                db.select(CreationList)
+                .filter_by(article_id=article_id)
+            ).scalar_one_or_none()
+
+            if creation_list:
+                creation_list.latest_update_time = datetime.utcnow().date()
+                creation_list.latest_update_chapter_name = chapter.chapter_name
+            else:
+                creation_list = CreationList(
+                    author_id=article.author_id,
+                    article_id=article.id,
+                    article_name=article.article_name,
+                    create_date=datetime.utcnow().date(),
+                    latest_update_time=datetime.utcnow().date(),
+                    latest_update_chapter_name=chapter.chapter_name,
+                    views=0
+                )
+                db.session.add(creation_list)
+
             db.session.commit()
             return True, chapter
-        except SQLAlchemyError:
+
+        except ValueError as e:
             db.session.rollback()
+            print(f"业务逻辑错误: {str(e)}")
+            return False, None
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            print(f"数据库操作异常: {str(e)}")
             return False, None
         
     @staticmethod
