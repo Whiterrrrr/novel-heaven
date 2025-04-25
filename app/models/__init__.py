@@ -182,6 +182,9 @@ class DBOperations:
     
     @staticmethod
     def get_latest_articles(limit=1):
+        """
+        注意这里返回的是一个list!
+        """
         return Article.query.order_by(Article.latest_update_time.desc()).limit(limit).all()
             
     @staticmethod
@@ -388,26 +391,49 @@ class DBOperations:
             return None, False
 
     @staticmethod
-    def create_article(author_id, article_data):
+    def create_article(author_id, article_data, keywords=None):
         """
-        创建文章并同步更新创作列表
+        创建文章并关联关键词
+        :param author_id: 作者ID
+        :param article_data: 文章数据字典
+        :param keywords: 关键词列表（如：["星际", "机甲", "热血"]）
+        :return: Article实例（失败时返回None）
         """
         try:
-            author = User.query.get(author_id)
+            author = db.session.get(User, author_id)
             if not author or not author.is_author:
                 raise ValueError("无效的作者ID或用户非作者身份")
 
             now = datetime.utcnow()
-            
             article = Article(
                 author_id=author_id,
                 **article_data,
-                create_time=now, 
+                create_time=now,
                 latest_update_time=now,
                 latest_update_chapter_name="未发布章节"
             )
             db.session.add(article)
-            db.session.flush()
+            db.session.flush()  # 获取article.id
+
+            if keywords:
+                for kw_text in set(keywords):
+                    keyword = db.session.execute(
+                        db.select(KeyWord)
+                        .where(KeyWord.keyword == kw_text)
+                    ).scalar_one_or_none()
+
+                    if not keyword:
+                        keyword = KeyWord(keyword=kw_text)
+                        db.session.add(keyword)
+                        db.session.flush()  # 获取keyword.id
+
+                    db.session.execute(
+                        db.insert(ArticleKeyword)
+                        .values(
+                            article_id=article.id,
+                            keyword_id=keyword.id
+                        )
+                    )
 
             creation_list = CreationList(
                 author_id=author_id,
@@ -415,8 +441,7 @@ class DBOperations:
                 article_name=article.article_name,
                 create_date=now.date(),
                 latest_update_time=now.date(),
-                latest_update_chapter_name=article.latest_update_chapter_name,  # 同步章节状态
-                views=0
+                latest_update_chapter_name=article.latest_update_chapter_name,
             )
             db.session.add(creation_list)
 
@@ -431,6 +456,33 @@ class DBOperations:
             db.session.rollback()
             print(f"数据库操作异常: {str(e)}")
             return None
+
+    @staticmethod
+    def get_keyword_stats(keyword=None):
+        """
+        获取关键词统计信息
+        :param keyword: 指定关键词（None时返回全部）
+        :return: [{"keyword": str, "usage_count": int, "is_hot": bool}]
+        """
+        query = db.session.query(
+            KeyWord.keyword,
+            db.func.count(ArticleKeyword.keyword_id).label('usage_count'),
+            KeyWord.is_hot
+        ).outerjoin(
+            ArticleKeyword,
+            KeyWord.id == ArticleKeyword.keyword_id
+        ).group_by(
+            KeyWord.id
+        )
+
+        if keyword:
+            query = query.filter(KeyWord.keyword == keyword)
+
+        return [{
+            "keyword": r.keyword,
+            "usage_count": r.usage_count or 0,
+            "is_hot": r.is_hot
+        } for r in query.all()]
 
     @staticmethod
     def update_article(article_id, update_data):
@@ -448,6 +500,20 @@ class DBOperations:
         except SQLAlchemyError:
             db.session.rollback()
             return None
+        
+    @staticmethod
+    def add_article_view(article_id):
+        """
+        增加阅读量
+        return是否成功
+        """
+        article = Article.query.get(article_id)
+        if not article:
+            return False
+        article.views += 1
+        db.session.commit()
+        
+        return True
 
     @staticmethod
     def update_chapter(chapter_id, update_data):
@@ -573,6 +639,7 @@ class DBOperations:
     def create_chapter(article_id, chapter_data):
         """
         创建章节并同步更新创作列表
+        return: 是否成功(True/False), chapter实例
         """
         try:
             chapter = Chapter(
@@ -580,8 +647,9 @@ class DBOperations:
                 chapter_name=chapter_data.get('chapter_name'),
                 word_count=chapter_data.get('word_count', 0),
                 text_path=chapter_data.get('text_path'),
-                status=chapter_data.get('status', 'draft'),
-                latest_update_time=datetime.utcnow() 
+                status=chapter_data.get('status'),
+                latest_update_time=datetime.utcnow(),
+                is_draft=chapter_data.get('is_draft'),
             )
             db.session.add(chapter)
             db.session.flush()
@@ -610,7 +678,6 @@ class DBOperations:
                     create_date=datetime.utcnow().date(),
                     latest_update_time=datetime.utcnow().date(),
                     latest_update_chapter_name=chapter.chapter_name,
-                    views=0
                 )
                 db.session.add(creation_list)
 
@@ -643,61 +710,135 @@ class DBOperations:
     @staticmethod
     def delete_chapter(chapter_id):
         """
-        删除章节
-        :return: 是否成功
+        删除章节并同步更新相关数据
+        Return: 是否成功 True/False
         """
         try:
-            # 先获取章节信息用于更新文章状态
-            chapter = Chapter.query.get(chapter_id)
+            chapter = db.session.get(Chapter, chapter_id)
             if not chapter:
                 return False
-            
-            # 删除章节
-            deleted = Chapter.query.filter_by(id=chapter_id).delete()
-            
-            # 更新文章信息
-            article = Article.query.get(chapter.article_id)
+
+            article_id = chapter.article_id
+            chapter_name = chapter.chapter_name
+
+            db.session.delete(chapter)
+
+            article = db.session.get(Article, article_id)
             if article:
-                article.chapter_number -= 1
+                remaining_chapters = Chapter.query.filter_by(
+                    article_id=article_id
+                ).count()
+                
+                article.chapter_number = remaining_chapters
                 article.latest_update_time = datetime.utcnow()
-            
+
+                if article.latest_update_chapter_name == chapter_name:
+                    latest_chapter = Chapter.query.filter_by(
+                        article_id=article_id
+                    ).order_by(
+                        Chapter.latest_update_time.desc()
+                    ).first()
+                    
+                    article.latest_update_chapter_name = (
+                        latest_chapter.chapter_name if latest_chapter 
+                        else f"已删除章节: {chapter_name}"
+                    )
+
+            creation_list = db.session.execute(
+                db.select(CreationList)
+                .filter_by(article_id=article_id)
+            ).scalar_one_or_none()
+
+            if creation_list:
+                creation_list.latest_update_time = datetime.utcnow().date()
+                creation_list.latest_update_chapter_name = (
+                    article.latest_update_chapter_name 
+                    if article 
+                    else f"已删除章节: {chapter_name}"
+                )
+
             db.session.commit()
-            return deleted > 0
-        except SQLAlchemyError:
+            return True
+
+        except SQLAlchemyError as e:
             db.session.rollback()
+            print(f"章节删除失败: {str(e)}")
             return False
     
     
     @staticmethod
     def keytag_list(search_keyword, limit=5):
         """
-        获取关键词标签列表
+        获取关键词标签列表（按使用频率排序）
         :param search_keyword: 搜索关键词
         :param limit: 返回数量
-        :return: List[KeyWord]
+        :return: List[dict] 格式示例: 
+            [{
+                "keyword": "星际", 
+                "is_hot": True,
+                "usage_count": 15
+            }]
         """
         try:
-            return KeyWord.query.filter(
-                or_(
+            # 获取关键词及其使用次数
+            keywords = db.session.query(
+                KeyWord,
+                db.func.count(ArticleKeyword.keyword_id).label('usage_count')
+            ).outerjoin(
+                ArticleKeyword,
+                KeyWord.id == ArticleKeyword.keyword_id
+            ).filter(
+                db.or_(
                     KeyWord.is_hot == True,
                     KeyWord.keyword.contains(search_keyword)
                 )
+            ).group_by(
+                KeyWord.id
+            ).order_by(
+                db.func.count(ArticleKeyword.keyword_id).desc()  # 按使用次数降序
             ).limit(limit).all()
+
+            return [{
+                "keyword": kw.keyword,
+                "is_hot": kw.is_hot,
+                "usage_count": usage_count or 0
+            } for kw, usage_count in keywords]
         except SQLAlchemyError:
             return []
     
     @staticmethod
-    def search_books(key_word, page=1, page_size=10):
+    def search_books(key_word, page=1, page_size=10, search_by_keyword=False):
         """
-        搜索文章
-        :return: (articles: List[Article], total: int, current_page: int, total_pages: int)
+        搜索文章（支持关键词和全文搜索）
+        :param key_word: 搜索词
+        :param search_by_keyword: True-按关键词搜索 False-按标题/简介搜索
+        :return: (articles, total, current_page, total_pages)
         """
         try:
-            query = Article.query.filter(
-                Article.article_name.contains(key_word) |
-                Article.intro.contains(key_word)
+            if search_by_keyword:
+                query = Article.query.join(
+                    ArticleKeyword
+                ).join(
+                    KeyWord
+                ).filter(
+                    KeyWord.keyword.contains(key_word)
+                ).order_by(
+                    Article.latest_update_time.desc()
+                )
+            else:
+                query = Article.query.filter(
+                    db.or_(
+                        Article.article_name.contains(key_word),
+                        Article.intro.contains(key_word)
+                    )
+                )
+
+            pagination = query.paginate(
+                page=page,
+                per_page=page_size,
+                error_out=False
             )
-            pagination = query.paginate(page=page, per_page=page_size, error_out=False)
+            
             return (
                 pagination.items,
                 pagination.total,

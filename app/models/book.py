@@ -143,7 +143,6 @@ class CreationList(db.Model):
     create_date = db.Column(db.Date)
     latest_update_time = db.Column(db.Date)
     latest_update_chapter_name = db.Column(db.String(100))
-    views = db.Column(db.Integer)
     
     author = db.relationship(
         'User',
@@ -162,7 +161,6 @@ class CreationList(db.Model):
             'create_date': self.create_date.isoformat() if self.create_date else None,
             'latest_update_time': self.latest_update_time.isoformat() if self.latest_update_time else None,
             'latest_chapter': self.latest_update_chapter_name,
-            'views': self.views
         }
         
 class ReadingRecord(db.Model):

@@ -1,24 +1,51 @@
 import pytest
 from datetime import datetime, timedelta
 from sqlalchemy.exc import SQLAlchemyError
-from app.models import User, Article, Comment, ReadingRecord, BookShelf, Chapter, CreationList
-from app.models import DBOperations
+from app.models import *
 from app import create_app
 from app.models import db
 from pathlib import Path
 SAMPLE_DIR = Path(__file__).parent / "chapter_sample"
 TXT_FILES = [str(f) for f in SAMPLE_DIR.glob("*.txt")]
 
+def init_test_categories():
+    """返回测试用分类数据"""
+    return [
+        {"id": 1, "name": "玄幻奇幻"},
+        {"id": 2, "name": "都市生活"}, 
+        {"id": 3, "name": "科幻未来"}, 
+        {"id": 4, "name": "武侠仙侠"},
+        {"id": 5, "name": "悬疑惊悚-犯罪心理"},
+        {"id": 6, "name": "历史军事"},
+        {"id": 7, "name": "游戏竞技"}, 
+        {"id": 8, "name": "二次元"},
+        {"id": 9, "name": "西方奇幻"},
+        {"id": 10, "name": "无限流"},
+        {"id": 11, "name": "系统快穿"}, 
+        {"id": 12, "name": "古言宅斗"}, 
+        {"id": 13, "name": "星际机甲"}, 
+        {"id": 14, "name": "克苏鲁"}, 
+        {"id": 15, "name": "其他"}  
+    ]
+    
 @pytest.fixture(scope='module')
 def app():
     app = create_app()
     with app.app_context():
+        db.create_all()
         db.session.query(BookShelf).delete()
         db.session.query(ReadingRecord).delete()
         db.session.query(Comment).delete()
         db.session.query(Chapter).delete()
         db.session.query(Article).delete()
         db.session.query(User).delete()
+        db.session.query(Category).delete()
+        db.session.query(ArticleKeyword).delete()
+        db.session.query(KeyWord).delete()
+        
+        for data in init_test_categories():
+            category = Category(**data)
+            db.session.add(category)
         db.session.commit()
     return app
 
@@ -35,10 +62,12 @@ class TestDBOperations:
             db.session.query(User).delete()
             db.session.query(CreationList).delete()
             db.session.commit()
+            
+            # 用户1 ZHENG Kexin，作者用户
             result = DBOperations.create_user(
                 'ZHENG Kexin', '1155173723@link.cuhk.edu.hk', '200211zkx'
             )
-            user = User.query.filter_by(username='ZHENG Kexin').first()
+            user = DBOperations.get_user_by_username('ZHENG Kexin')
             assert user is not None
             assert user.check_password('200211zkx')
             
@@ -85,8 +114,9 @@ class TestDBOperations:
                         奇迹出现了。
                         消失已久的上将他求偶了。"""
                 }
+                article_keywords = ['星际', '甜文', '直播', '沙雕']
 
-                article = DBOperations.create_article(user.id, article_data)
+                article = DBOperations.create_article(user.id, article_data, article_keywords)
                 assert article is not None
                 assert article.article_name == '兽人永不为奴！'
                 assert article.author_id == user.id
@@ -103,41 +133,77 @@ class TestDBOperations:
                     "chapter_name": "第一章",
                     "word_count": 5000,
                     "text_path": TXT_FILES[0],
-                    "status": "published"
+                    "status": "published",
+                    "is_draft": False
                 }
                 
                 chapter_data2 = {
                     "chapter_name": "第二章",
                     "word_count": 5000,
                     "text_path": TXT_FILES[1],
-                    "status": "published"
+                    "status": "published",
+                    "is_draft": False
                 }
                 
                 chapter_data3 = {
                     "chapter_name": "第三章",
                     "word_count": 5000,
                     "text_path": TXT_FILES[2],
-                    "status": "published"
+                    "status": "serialized",
+                    "is_draft": True
                 }
-                success, chapter = DBOperations.create_chapter(
+                success, chapter1 = DBOperations.create_chapter(
                     article.id,
                     chapter_data1
                 )
             assert success is True
-            assert chapter.chapter_name == "第一章"
-            assert Path(chapter.text_path).exists()  # 验证文件真实存在
+            assert chapter1.chapter_name == "第一章"
+            assert Path(chapter1.text_path).exists()  # 验证文件真实存在
 
             updated_article = db.session.get(Article, article.id)
             assert updated_article.chapter_number == 1
             assert updated_article.latest_update_chapter_name == "第一章"
             assert (datetime.utcnow() - updated_article.latest_update_time) < timedelta(seconds=1)
         
-            success, chapter = DBOperations.create_chapter(
+            success, chapter2 = DBOperations.create_chapter(
                 article.id,
                 chapter_data2
             )
             
-            success, chapter = DBOperations.create_chapter(
+            success, chapter3 = DBOperations.create_chapter(
                 article.id,
                 chapter_data3
             )
+            
+            result = DBOperations.delete_chapter(chapter2.id)
+            assert result == True
+            
+            latest_article = DBOperations.get_latest_articles()
+            assert latest_article[0].id == article.id
+            
+            # 用户2 3： LIN Dachaun & YANG Zihao，普通读者用户
+    
+            result2 = DBOperations.create_user(
+                'LIN Dachaun', '1155191482@link.cuhk.edu.hk', 'lindachuan'
+            )
+            result3 = DBOperations.create_user(
+                'YANG Zihao', '1155191399@link.cuhk.edu.hk', 'yangzihao'
+            )
+            user_lindachuan = DBOperations.get_user_by_username('LIN Dachaun')
+            user_yangzihao = DBOperations.get_user_by_username('YANG Zihao')
+            
+            DBOperations.update_user_settings(user_lindachuan.id, {'gender': 'M', 'is_author': 0})
+            DBOperations.update_user_settings(user_yangzihao.id, {'gender': 'M', 'is_author': 0})
+            
+            DBOperations.add_article_view(article.id)
+            DBOperations.add_article_view(article.id)
+            DBOperations.add_to_bookshelf(user_lindachuan.id, article.id)
+            DBOperations.add_to_bookshelf(user_yangzihao.id, article.id)
+            comment1 = DBOperations.create_comment(user_lindachuan.id, article.id, "写的什么玩意依托...")
+            comment2 = DBOperations.create_comment(user_yangzihao.id, article.id, "我觉得还不错啊，至少很猎奇")
+            DBOperations.delete_book_from_shelf(user_lindachuan.id, article.id)
+            DBOperations.update_reading_progress(user_yangzihao.id, article.id, chapter3.id, 3)
+            
+            like_result, total_likes = DBOperations.make_like(article.id)
+            assert like_result == True
+            assert total_likes == 1

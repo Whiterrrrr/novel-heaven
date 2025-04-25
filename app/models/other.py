@@ -2,10 +2,26 @@ from datetime import datetime
 from .base import db
 
 class KeyWord(db.Model):
+    __tablename__ = 'keyword'
+    
     id = db.Column(db.Integer, primary_key=True)
-    keyword = db.Column(db.String(20))
-    count = db.Column(db.Integer, default=0)
+    keyword = db.Column(db.String(20), unique=True)
     is_hot = db.Column(db.Boolean, default=False)
+    
+    @property
+    def usage_count(self):
+        return db.session.query(ArticleKeyword).filter_by(keyword_id=self.id).count()
+
+class ArticleKeyword(db.Model):
+    __tablename__ = 'article_keyword'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id', ondelete='CASCADE'))
+    keyword_id = db.Column(db.Integer, db.ForeignKey('keyword.id', ondelete='CASCADE'))
+    
+    __table_args__ = (
+        db.UniqueConstraint('article_id', 'keyword_id', name='uq_article_keyword'),
+    )
 
 
 class Category(db.Model):
