@@ -19,7 +19,6 @@ class Article(db.Model):
     )
     
     article_name = db.Column(db.String(200), nullable=False)
-    cat_name = db.Column(db.String(50))
     chapter_number = db.Column(db.Integer, default=0)
     status = db.Column(db.String(50), default='serialized')
     

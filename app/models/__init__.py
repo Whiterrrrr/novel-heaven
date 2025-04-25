@@ -159,7 +159,7 @@ class DBOperations:
             return None
     
     @staticmethod
-    def create_user(username, email, password, gender=None):
+    def create_user(username, email, password, gender=None, is_author=False):
         if User.query.filter((User.username == username) | (User.email == email)).first():
             return None
         
@@ -168,7 +168,8 @@ class DBOperations:
             email=email,
             gender=gender,
             joined_at=datetime.utcnow(),
-            last_seen=datetime.utcnow()
+            last_seen=datetime.utcnow(),
+            is_author=is_author
         )
         new_user.set_password(password)
         
@@ -536,6 +537,15 @@ class DBOperations:
                 article.latest_update_time = datetime.utcnow()
                 if 'chapter_name' in updates:
                     article.latest_update_chapter_name = updates['chapter_name']
+                
+                total_words = db.session.query(
+                    db.func.sum(Chapter.word_count)
+                ).filter(
+                    Chapter.article_id == article.id,
+                    Chapter.is_draft == False  # 只统计非草稿章节
+                ).scalar() or 0
+
+                article.word_count = total_words
             
             db.session.commit()
             return chapter
@@ -680,6 +690,15 @@ class DBOperations:
                     latest_update_chapter_name=chapter.chapter_name,
                 )
                 db.session.add(creation_list)
+                
+            total_words = db.session.query(
+                db.func.sum(Chapter.word_count)
+            ).filter(
+                Chapter.article_id == article.id,
+                Chapter.is_draft == False  # 只统计非草稿章节
+            ).scalar() or 0
+
+            article.word_count = total_words
 
             db.session.commit()
             return True, chapter
@@ -743,6 +762,15 @@ class DBOperations:
                         latest_chapter.chapter_name if latest_chapter 
                         else f"已删除章节: {chapter_name}"
                     )
+                    
+                total_words = db.session.query(
+                    db.func.sum(Chapter.word_count)
+                ).filter(
+                    Chapter.article_id == article.id,
+                    Chapter.is_draft == False  # 只统计非草稿章节
+                ).scalar() or 0
+
+                article.word_count = total_words
 
             creation_list = db.session.execute(
                 db.select(CreationList)
