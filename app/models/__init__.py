@@ -459,33 +459,6 @@ class DBOperations:
             return None
 
     @staticmethod
-    def get_keyword_stats(keyword=None):
-        """
-        获取关键词统计信息
-        :param keyword: 指定关键词（None时返回全部）
-        :return: [{"keyword": str, "usage_count": int, "is_hot": bool}]
-        """
-        query = db.session.query(
-            KeyWord.keyword,
-            db.func.count(ArticleKeyword.keyword_id).label('usage_count'),
-            KeyWord.is_hot
-        ).outerjoin(
-            ArticleKeyword,
-            KeyWord.id == ArticleKeyword.keyword_id
-        ).group_by(
-            KeyWord.id
-        )
-
-        if keyword:
-            query = query.filter(KeyWord.keyword == keyword)
-
-        return [{
-            "keyword": r.keyword,
-            "usage_count": r.usage_count or 0,
-            "is_hot": r.is_hot
-        } for r in query.all()]
-
-    @staticmethod
     def update_article(article_id, update_data):
         article = Article.query.get(article_id)
         if not article:

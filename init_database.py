@@ -153,8 +153,6 @@ def init_interactions():
                 chapter_id=3,
                 duration_hours=5.0
             )
-
-        for article in articles:
             DBOperations.make_like(article.id)
             DBOperations.add_article_view(article.id)
             DBOperations.add_to_bookshelf(lin.id, article.id)
@@ -183,3 +181,11 @@ if __name__ == "__main__":
         
         init_interactions()
         print("交互数据生成完成")
+        
+        search_result, _, _, _ = DBOperations.search_books('宫廷', search_by_keyword=True)
+        print(search_result)
+        keylist_result = DBOperations.keytag_list('宫廷')
+        print(keylist_result)
+        article_statistics = DBOperations.get_article_statistics(search_result[0].id)
+        print(article_statistics)
+        
