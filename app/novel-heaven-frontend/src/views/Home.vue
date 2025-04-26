@@ -16,12 +16,27 @@ import RankingCarousel from '../components/RankingCarousel.vue'
 const router = useRouter()
 const books = ref([])
 
-onMounted(async () => {
-  // TODO: 从后端接口拉 27 本热门小说
-  // const res = await fetch('/api/books/hot?limit=27')
-  // books.value = await res.json()
+async function fetchHotBooks(limit = 27) {
+  try {
+    const response = await fetch(`/api/books/hot?limit=${limit}`)
+    if (!response.ok) {
+      throw new Error(`HTTP错误，状态码: ${response.status}`)
+    }
+    const data = await response.json()
+    books.value = data
+  } catch (error) {
+    console.error('获取热门小说失败：', error)
+    // TODO: 可根据需求使用本地假数据作为回退方案
+  }
+}
 
-  // 这里先用假数据示例
+//onMounted(() => {
+//  fetchHotBooks(27)
+//})
+
+//假数据，仅用来看排版布局，测试通信函数使用上面那个
+onMounted(async () => {
+
   books.value = [
     {
       id: 1,

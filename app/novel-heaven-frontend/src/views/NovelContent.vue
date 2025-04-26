@@ -38,26 +38,75 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+//chatpeter1Content,chatpeter2Content,chatpeter3Content都是为了测试布局的假数据
 import { chapter1Content } from '@/data/chapterContents.js';
 import { chapter2Content, chapter3Content } from '../data/chapterContents';
+import axios from 'axios'
 
 const route = useRoute();
 const router = useRouter();
 const novelId = route.params.id;
 const chapterId = route.params.chapterId;
-
 const novelTitle = ref('');
-//后端传输
+
+//假数据
 onMounted(() => {
   novelTitle.value = '惜花芷';
 });
-
+//假数据
 const chapters = ref([
   { id: 1, title: '第一章 替嫁', content: chapter1Content },
   { id: 2, title: '第二章 拿惯银枪的手', content: chapter2Content },
   { id: 3, title: '第三章 掐着点回来圆房？', content: chapter3Content },
   // 更多章节...
 ]);
+
+
+ async function loadNovelMeta() {
+  try {
+    const { data } = await axios.get(`/api/novel/${novelId}`)
+    novelTitle.value = data.title
+  } catch (err) {
+    console.error('加载小说元信息失败：', err)
+  }
+}
+
+
+async function loadChaptersList() {
+  try {
+    const { data } = await axios.get(`/api/novel/${novelId}/chapters`)
+    chapters.value = data
+  } catch (err) {
+    console.error('加载章节列表失败：', err)
+  }
+}
+
+async function loadChapterContent() {
+  try {
+    const cid = chapterId.value
+    const { data } = await axios.get(
+      `/api/novel/${novelId}/chapters/${cid}/content`
+    )
+    currentChapter.value = data
+  } catch (err) {
+    console.error('加载章节内容失败：', err)
+  }
+}
+// 监听页面参数变化，翻页时自动刷新正文
+//watch(
+//  () => route.params.chapterId,
+//  newId => {
+//    chapterId.value = newId
+//    loadChapterContent()
+//  }
+//)
+
+//测试调用函数请用这个，把上面的假数据注释掉
+//onMounted(() => {
+//  loadNovelMeta()
+//  loadChaptersList()
+//  loadChapterContent()
+//})
 
 const contentLines = computed(() =>
   currentChapter.value.content

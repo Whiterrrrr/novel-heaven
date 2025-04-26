@@ -44,14 +44,68 @@
           </li>
         </ul>
       </section>
+     
     </div>
   </div>
+  <!-- —— 新增 “评论区” 外层包裹 —— -->
+ <div class="comment-extra">
+  <div class="comment-extra-container">
+    <!-- 评论区头部：数量 + 排序 -->
+    <div class="comment-header">
+      <span class="comment-count">评论 </span>
+      <div class="comment-tabs">
+        <button
+          :class="{ active: commentSort === 'hot' }"
+          @click="commentSort = 'hot'"
+        >最热</button>
+        <span>|</span>
+        <button
+          :class="{ active: commentSort === 'new' }"
+          @click="commentSort = 'new'"
+        >最新</button>
+      </div>
+    </div>
+
+    <!-- 评论表单或登录提示 -->
+    <div class="comment-section">
+      <div v-if="!userStore.isAuthenticated" class="login-prompt">
+        <router-link to="/login">请先 登录 后发表评论 (｡･ω･｡)</router-link>
+      </div>
+      <div v-else class="comment-form">
+        <textarea
+          v-model="newComment"
+          placeholder="写下你的评论..."
+          rows="4"
+        ></textarea>
+        <button @click="submitComment">发表评论</button>
+      </div>
+
+      <!-- 评论列表 -->
+      <div class="comments-list">
+        <div
+          v-for="c in sortedComments"
+          :key="c.id"
+          class="comment-item"
+        >
+          <div class="comment-author">{{ c.author }}</div>
+          <div class="comment-content">{{ c.content }}</div>
+        </div>
+        <div v-if="comments.length === 0" class="no-comments">
+          暂无评论，快来抢沙发！
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+ 
 
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted,computed} from 'vue';
 import { useRoute } from 'vue-router';
+import { useUserStore } from '@/store/index';
+import axios from 'axios';
 
 const route = useRoute();
 const novelId = route.params.id; 
@@ -59,8 +113,82 @@ const novelId = route.params.id;
 const novel = ref({});
 const isFavorited = ref(false);  // 收藏状态
 
+
+const userStore = useUserStore();
+const comments = ref([]);
+const newComment = ref('');
+const commentSort = ref('hot');
+
+const sortedComments = computed(() => {
+  if (commentSort.value === 'new') {
+    return [...comments.value].sort((a, b) => b.id - a.id);
+  }
+  // 最热：按模拟的点赞数（这里用 id 简化），id 大的排前
+  return [...comments.value].sort((a, b) => b.likes - a.likes);
+});
+
+async function loadNovelDetail() {
+  try {
+    const { data } = await axios.get(`/api/novel/${novelId}`)
+    novel.value = data
+  } catch (err) {
+    console.error('加载小说详情失败：', err)
+    // TODO: 可展示提示或使用默认占位数据
+  }
+}
+async function loadChaptersList() {
+  try {
+    const { data } = await axios.get(`/api/novel/${novelId}/chapters`)
+    chaptersList.value = data
+  } catch (err) {
+    console.error('加载章节列表失败：', err)
+  }
+}
+async function fetchComments() {
+  try {
+    const { data } = await axios.get(`/api/novel/${novelId}/comments`)
+    comments.value = data
+  } catch (err) {
+    console.error('加载评论失败：', err)
+  }
+}
+async function submitComment() {
+  const txt = newComment.value.trim()
+  if (!txt) return
+  try {
+    await axios.post(`/api/novel/${novelId}/comments`, { content: txt })
+    newComment.value = ''
+    fetchComments()
+  } catch (err) {
+    console.error('提交评论失败：', err)
+    // TODO: 可在界面上提示“发布失败，请重试”
+  }
+}
+async function toggleFavorite() {
+  // 优先更新本地 UI 状态
+  isFavorited.value = !isFavorited.value
+
+  try {
+    // 同步到后端
+    await axios.post(
+      `/api/novel/${novelId}/favorite`,
+      { favorite: isFavorited.value }
+    )
+  } catch (err) {
+    console.error('同步收藏状态失败：', err)
+    // 回滚本地状态，保证 UI 与后端一致
+    isFavorited.value = !isFavorited.value
+    // 可在这里触发错误提示，比如 toast 或对话框
+  }
+}
+//onMounted(() => {
+//  loadNovelDetail()
+//  loadChaptersList()
+//  fetchComments()
+//})
+// 假数据，仅用来看排版布局，测试通信函数使用上面那个
 onMounted(async () => {
- // 使用假数据加载小说详情（在实际应用中可以从后端获取数据）
+ 
  novel.value = {
    id: novelId,
    title: '惜花芷',
@@ -69,20 +197,25 @@ onMounted(async () => {
    updateTime: '2025-04-15 11:45',
    cover: '/src/assets/covers/book1.jpeg', 
    description: '双生妹妹嫁入皇宫前夕，遭人谋害，凌辱致死。 身为姐姐的凤九颜浴血归来，脱去一身戎装替嫁，成为一国之后。 然后，她杀疯了！ 皇帝有白月光，她出嫁时，都以为她不得圣宠。 听着那些人的嘲笑侮辱，她不屑一顾。 因为，她入宫，不为争宠，只为杀光伤害妹妹的仇人…… 报完仇，她断然离开。 皇帝却把自己洗干净了，抓着她的衣角求她，“皇后，你看，朕还能要吗？” 她一脚踹开..'
- };
+ 
+  };
+  
 });
+// 假数据，仅用来看排版布局
 const chaptersList = ref([
   { id: 1, title: '第一章 替嫁' },
   { id: 2, title: '第二章 拿惯银枪的手' },
   { id: 3, title: '第三章 掐着点回来圆房？' },
-  // …根据实际章节数自行补充
+  
 ]);
 
-
 // 切换收藏状态
-const toggleFavorite = () => {
- isFavorited.value = !isFavorited.value;
-};
+//const toggleFavorite = () => {
+// isFavorited.value = !isFavorited.value;
+//};
+
+
+
 </script>
 
 <style scoped>
@@ -279,7 +412,103 @@ const toggleFavorite = () => {
   background: #ff6600;
 }
 
-</style> 
+.comment-extra {
+  background: #f5f5f5;
+  padding: 40px 0;
+}
+.comment-extra-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* 评论区头部 */
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.comment-count {
+  font-size: 20px;
+  font-weight: bold;
+}
+.comment-tabs {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+.comment-tabs button {
+  background: none;
+  border: none;
+  color: #888;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.comment-tabs button.active {
+  color: #333;
+  font-weight: bold;
+}
+
+/* 评论表单 */
+.comment-form textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+}
+.comment-form button {
+  margin-top: 8px;
+  padding: 6px 16px;
+  background: #ff6600;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.comment-form button:hover {
+  background: #e65500;
+}
+
+/* 登录提示 */
+.login-prompt {
+  margin-bottom: 16px;
+}
+.login-prompt a {
+  color: #ff6600;
+  text-decoration: none;
+}
+
+/* 评论列表 */
+.comments-list {
+  margin-top: 24px;
+}
+.comment-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+.comment-item:last-child {
+  border-bottom: none;
+}
+.comment-author {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+.comment-content {
+  color: #333;
+}
+/* 无评论提示 */
+.no-comments {
+  text-align: center;
+  color: #888;
+  padding: 12px 0;
+}
+
+</style>
 
 
 

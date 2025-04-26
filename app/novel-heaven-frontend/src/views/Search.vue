@@ -47,6 +47,7 @@
   import { ref, computed, watch,onMounted} from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import novels from '@/data/novels.js';
+  import axios from 'axios'
   
   const route = useRoute();
   const router = useRouter();
@@ -54,18 +55,62 @@
   const query = ref('');
   const hasSearched = ref(false);
   const tab = ref('related');
-  
+  const searchResults = ref([])
 
-// 路由 ?q=xxx 一变就触发一次搜索（immediate: true 保证初始化也触发）
+async function searchNovels(q) {
+  try {
+    const { data } = await axios.get(
+      `/api/novel/search?q=${encodeURIComponent(q)}`
+    )
+    searchResults.value = data
+  } catch (err) {
+    console.error('搜索接口调用失败：', err)
+    searchResults.value = []
+  }
+}
+
 onMounted(() => {
   const q = route.query.q;
   if (typeof q === 'string' && q.trim()) {
     query.value = q;
     hasSearched.value = true;
+    //searchNovels(q); 
   }
 });
-  
-  // 点击搜索按钮
+//测试调用函数，需要使用这个
+//async function doSearch() {
+//  const q = query.value.trim()
+//  if (!q) {
+//    hasSearched.value = false
+//    return
+//  }
+//  hasSearched.value = true
+  // 更新路由参数
+//  router.push({ path: '/search', query: { q } })
+  // 调用后端搜索
+//  await searchNovels(q)
+//}
+
+//  const filtered = computed(() => {
+//  if (!hasSearched.value) return []
+  // 仅“相关”标签，直接展示后端结果
+//  return tab.value === 'related' ? searchResults.value : []
+//})
+
+ //监听路由变化，保持页面与 URL 同步
+watch(
+  () => route.query.q,
+    (newQ) => {
+    if (typeof newQ === 'string' && newQ.trim()) {
+      query.value = newQ
+      hasSearched.value = true
+      searchNovels(newQ)
+    } else {
+      hasSearched.value = false
+      searchResults.value = []
+    }
+  }
+)
   function doSearch() {
     const q = query.value.trim();
     if (!q) {
