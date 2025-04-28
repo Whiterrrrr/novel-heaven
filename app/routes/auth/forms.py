@@ -14,6 +14,11 @@ class LoginForm(FlaskForm):
     remember_me = BooleanField('记住我')
     submit = SubmitField('登录')
 
+class RenameForm(FlaskForm):
+    name = StringField('new_name', validators=[
+        DataRequired(message='笔名不能为空')
+    ])
+
 class SettingsForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(1, 64)])
     email = StringField('Email', validators=[DataRequired(), Email()])

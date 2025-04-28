@@ -1,3 +1,5 @@
+from flask import session
+
 from .base import db
 from .user import *
 from .book import *
@@ -110,7 +112,7 @@ class DBOperations:
             
             user.last_seen = datetime.utcnow()
             db.session.commit()
-            
+            session['user_id'] = user.id
             login_user(user, remember=remember)
             return True, user, "登录成功"
         except SQLAlchemyError:
@@ -125,7 +127,7 @@ class DBOperations:
         :return: (reward_given: bool, amount: int)
         """
         try:
-            if user.last_seen.date() == date.today():
+            if False and user.last_seen.date() == date.today():
                 return False, 0
             
             reward = 10

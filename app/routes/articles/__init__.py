@@ -5,8 +5,8 @@ articles_bp = Blueprint(
     'articles',  # 蓝本名称
     __name__,
     template_folder='templates/articles',  # 指定模板目录
-    url_prefix='/articles'  # URL前缀
+    url_prefix='/api'  # URL前缀
 )
 
 # 导入路由定义（必须放在最后避免循环引用）
-from . import routes, comment,mybooks,category,bookview,publish,search,aiAssist
+from . import routes, comment,mybooks,category,bookview,publish,search #,aiAssist

@@ -94,7 +94,7 @@ def init_users():
                 user_data.get("is_author", False),
             )
 
-@staticmethod
+
 def process_books():
     with app.app_context():
         for author_dir in SAMPLE_DIR.iterdir():
@@ -132,7 +132,7 @@ def process_books():
                         }
                     )
 
-@staticmethod
+
 def init_interactions():
     with app.app_context():
         articles = DBOperations.get_latest_articles(limit=100)

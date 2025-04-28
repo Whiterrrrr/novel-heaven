@@ -19,14 +19,18 @@ flask shell
 
 ### 4. 执行本地数据库创建初始化命令（在打开的Python环境中）
 ```
-from app.models import db
-db.create_all()
-exit()
+python init_database.py
 ```
 
 ### 5. 运行app
+后端：
 ```
 python run.py
+```
+前端：
+```commandline
+cd ./app/novel-heaven-frontend/
+npm run dev
 ```
 
 ## Useful information
