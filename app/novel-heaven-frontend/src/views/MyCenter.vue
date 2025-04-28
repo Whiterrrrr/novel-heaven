@@ -194,5 +194,3 @@ export default {
 .rewards-section ul,.messages-section ul{list-style:disc;padding-left:1.2rem;margin:0;color:#555}
 .coin-line{margin-top:.8rem;font-weight:600;color:#a8412a}
 </style>
-
-  

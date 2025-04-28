@@ -92,7 +92,7 @@ async function loadChapterContent() {
     console.error('加载章节内容失败：', err)
   }
 }
-// 监听页面参数变化，翻页时自动刷新正文
+// 监听页面参数变化，翻页时自动刷新正文，与后端连接使用
 //watch(
 //  () => route.params.chapterId,
 //  newId => {

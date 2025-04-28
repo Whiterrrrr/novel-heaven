@@ -12,13 +12,44 @@
          <span class="author">{{ novel.author }}</span>
        </div>
        <div class="read-btn-container">
-         <router-link :to="'/novel/' + novel.id +'/content/1'" class="read-btn">开始阅读</router-link>
-         <button @click="toggleFavorite" :class="{'favorited': isFavorited}" class="favorite-btn">
-           <svg xmlns="http://www.w3.org/2000/svg" fill="none" width="24" height="24" viewBox="0 0 24 24" stroke="currentColor">
-             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-           </svg>
-         </button>
-       </div>
+            <router-link
+              :to="'/novel/' + novel.id + '/content/1'"
+              class="read-btn"
+            >
+              开始阅读
+            </router-link>
+            <button
+              @click="handleFavoriteClick"
+              :class="{ favorited: isFavorited }"
+              class="favorite-btn"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 
+                     2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09
+                     C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5
+                     c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                />
+              </svg>
+            </button>
+            <button @click="handleCoinClick" class="coin-btn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="12" r="10" stroke="#666" stroke-width="2" fill="#FFF"/>
+  <text x="12" y="16" text-anchor="middle" font-size="12" fill="#666" font-family="Arial">¥</text>
+</svg>
+    </button>
+            
+          </div>
      </div>
    </div>
  </div>
@@ -44,70 +75,59 @@
           </li>
         </ul>
       </section>
-     
+       
     </div>
   </div>
   <!-- —— 新增 “评论区” 外层包裹 —— -->
- <div class="comment-extra">
-  <div class="comment-extra-container">
-    <!-- 评论区头部：数量 + 排序 -->
-    <div class="comment-header">
-      <span class="comment-count">评论 </span>
-      <div class="comment-tabs">
-        <button
-          :class="{ active: commentSort === 'hot' }"
-          @click="commentSort = 'hot'"
-        >最热</button>
-        <span>|</span>
-        <button
-          :class="{ active: commentSort === 'new' }"
-          @click="commentSort = 'new'"
-        >最新</button>
-      </div>
-    </div>
-
-    <!-- 评论表单或登录提示 -->
-    <div class="comment-section">
-      <div v-if="!userStore.isAuthenticated" class="login-prompt">
-        <router-link to="/login">请先 登录 后发表评论 (｡･ω･｡)</router-link>
-      </div>
-      <div v-else class="comment-form">
-        <textarea
-          v-model="newComment"
-          placeholder="写下你的评论..."
-          rows="4"
-        ></textarea>
-        <button @click="submitComment">发表评论</button>
-      </div>
-
-      <!-- 评论列表 -->
-      <div class="comments-list">
-        <div
-          v-for="c in sortedComments"
-          :key="c.id"
-          class="comment-item"
-        >
-          <div class="comment-author">{{ c.author }}</div>
-          <div class="comment-content">{{ c.content }}</div>
+  <div class="comment-extra">
+      <div class="comment-extra-container">
+        <div class="comment-header">
+          <span class="comment-count">评论</span>
         </div>
-        <div v-if="comments.length === 0" class="no-comments">
-          暂无评论，快来抢沙发！
+  
+        <div class="comment-section">
+          <div v-if="!userStore.isAuthenticated" class="login-prompt">
+            <router-link to="/login">请先 登录 后发表评论 (｡･ω･｡)</router-link>
+          </div>
+          <div v-else class="comment-form">
+            <textarea
+              ref="commentTextarea"
+              v-model="newComment"
+              placeholder="写下你的评论..."
+              rows="1"
+              @input="autoResize"
+            ></textarea>
+            <div class="comment-form-actions">
+              <button @click="submitComment">发表评论</button>
+            </div>
+          </div>
+  
+          <div class="comments-list">
+            <div
+              v-for="c in comments"
+              :key="c.id"
+              class="comment-item"
+            >
+              <div class="comment-author">{{ c.author }}</div>
+              <div class="comment-content">{{ c.content }}</div>
+            </div>
+            <div v-if="comments.length === 0" class="no-comments">
+              暂无评论，快来抢沙发！
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
- 
-
 </template>
 
 <script setup>
 import { ref, onMounted,computed} from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute,useRouter } from 'vue-router';
 import { useUserStore } from '@/store/index';
+const route = useRoute()
+const router = useRouter()
 import axios from 'axios';
 
-const route = useRoute();
 const novelId = route.params.id; 
 
 const novel = ref({});
@@ -115,17 +135,30 @@ const isFavorited = ref(false);  // 收藏状态
 
 
 const userStore = useUserStore();
-const comments = ref([]);
+//const comments = ref([]);
+// 假数据，仅用来看排版布局
+const comments = ref([
+    { id: 1, author: '张三', content: '这本书太精彩了！' },
+    { id: 2, author: '李四', content: '文字很走心，给个👍' },
+    { id: 3, author: '王五', content: '等很久了，更新加快啊～' }
+  ])
 const newComment = ref('');
-const commentSort = ref('hot');
+const commentTextarea = ref(null)
 
-const sortedComments = computed(() => {
-  if (commentSort.value === 'new') {
-    return [...comments.value].sort((a, b) => b.id - a.id);
+  function handleFavoriteClick() {
+  if (!userStore.isAuthenticated) {
+    alert('请先登录！')
+    return
   }
-  // 最热：按模拟的点赞数（这里用 id 简化），id 大的排前
-  return [...comments.value].sort((a, b) => b.likes - a.likes);
-});
+  toggleFavorite();
+}
+  
+  function autoResize() {
+    const ta = commentTextarea.value
+    if (!ta) return
+    ta.style.height = 'auto'
+    ta.style.height = ta.scrollHeight + 'px'
+  }
 
 async function loadNovelDetail() {
   try {
@@ -161,7 +194,7 @@ async function submitComment() {
     fetchComments()
   } catch (err) {
     console.error('提交评论失败：', err)
-    // TODO: 可在界面上提示“发布失败，请重试”
+    
   }
 }
 async function toggleFavorite() {
@@ -181,6 +214,25 @@ async function toggleFavorite() {
     // 可在这里触发错误提示，比如 toast 或对话框
   }
 }
+async function handleCoinClick() {
+  if (!userStore.isAuthenticated) {
+    alert('请先登录！')
+    return;
+  }
+  try {
+    // 向后端申请扣币，接口路径可按实际修改
+    await axios.post(`/api/novel/${novelId}/coin`);
+    // TODO: 更新用户余额或给个成功提示
+  } catch (err) {
+    // 余额不足后端返回 400 时
+    if (err.response?.status === 400) {
+      alert('余额不足');
+    } else {
+      console.error('投币失败', err);
+    }
+  }
+}
+
 //onMounted(() => {
 //  loadNovelDetail()
 //  loadChaptersList()
@@ -209,15 +261,7 @@ const chaptersList = ref([
   
 ]);
 
-// 切换收藏状态
-//const toggleFavorite = () => {
-// isFavorited.value = !isFavorited.value;
-//};
-
-
-
 </script>
-
 <style scoped>
 .novel-detail {
  max-width: 1000px;
@@ -245,11 +289,12 @@ const chaptersList = ref([
 }
 
 .novel-info {
- flex: 1;
- display: flex;
- flex-direction: column;
- justify-content: flex-start;
- border-left: 2px solid #ccc;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;   /* 新增：水平居中 */
+  text-align: center;    /* 新增：文字居中 */
+  
 
 }
 
@@ -271,32 +316,36 @@ const chaptersList = ref([
 }
 
 .read-btn-container {
- margin-left:280px;
- margin-right: 200px;
- display: flex;
- align-items: center;
- gap: 15px;
+  margin-left:115px;
+  justify-content: center;  /* 水平居中整个按钮组 */
+  align-items: center;
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
 }
 
 .read-btn {
-
- display: inline-block;
+display: inline-block;
  padding: 10px 55px;
  background-color: #ff6600;
  color: white;
+
  text-decoration: none;
- border-radius: 5px;
+ border-radius: 10px;
  font-size: 16px;
  margin-top: 20px;
  
  border: 1px solid #ff6600;
+
 }
 
 .read-btn:hover {
  background-color: white;
  color: #ff6600;
 }
-
+.favorite-btn, .coin-btn {
+  margin: 0;            
+}
 .favorite-btn {
  margin-left:10px;
  margin-top:20px;
@@ -455,14 +504,27 @@ const chaptersList = ref([
 
 /* 评论表单 */
 .comment-form textarea {
+  font-size: 16px;      
+  line-height: 1.5;
   width: 100%;
-  padding: 8px;
+  padding: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  resize: vertical;
+  resize: none;        /* disable manual dragging */
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: box-shadow .2s, border-color .2s;
 }
-.comment-form button {
+.comment-form textarea:focus {
+  outline: none;
+  border-color: #66afe9;
+  box-shadow: 0 0 2px rgba(102,175,233,0.6);
+}
+.comment-form-actions {
+  text-align: right;
   margin-top: 8px;
+}
+.comment-form-actions button {
   padding: 6px 16px;
   background: #ff6600;
   color: #fff;
@@ -470,10 +532,9 @@ const chaptersList = ref([
   border-radius: 4px;
   cursor: pointer;
 }
-.comment-form button:hover {
+.comment-form-actions button:hover {
   background: #e65500;
 }
-
 /* 登录提示 */
 .login-prompt {
   margin-bottom: 16px;
@@ -484,31 +545,62 @@ const chaptersList = ref([
 }
 
 /* 评论列表 */
-.comments-list {
-  margin-top: 24px;
-}
+
 .comment-item {
-  padding: 12px 0;
-  border-bottom: 1px solid #eee;
+  
+  max-width: 1200px; 
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
-.comment-item:last-child {
-  border-bottom: none;
-}
+
 .comment-author {
+  margin-left:40px;
+  text-align: left;
   font-weight: bold;
-  margin-bottom: 4px;
-}
-.comment-content {
+  font-size: 16px;
   color: #333;
+  margin-bottom: 6px;
 }
-/* 无评论提示 */
+
+.comment-content {
+  margin-left:40px;
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #444;
+}
+
+/* 保留“暂无评论” */
 .no-comments {
   text-align: center;
   color: #888;
   padding: 12px 0;
 }
 
+.coin-btn {
+  margin-top: 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+.coin-btn svg {
+  width: 24px;
+  height: 24px;
+  color: #666;
+}
+.coin-btn:hover svg {
+  color: #ff6600;
+}
 </style>
+
+
+
+
+
+  
 
 
 

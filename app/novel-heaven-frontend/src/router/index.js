@@ -7,6 +7,10 @@ import Register from '@/views/Register.vue';
 import Library from '@/views/Library.vue';
 import NovelContent from '@/views/NovelContent.vue';
 import Search  from '@/views/Search.vue';
+import MyCenter from "../views/MyCenter.vue";
+import AuthorDashboard from "@/views/AuthorDashboard.vue";
+import CreateWork from "@/views/CreateWork.vue";
+import ChapterEditor from "@/views/ChapterEditor.vue";
 const routes = [
   { path: '/', component: Home },
   { path: '/search', component: Search, name: 'Search' },
@@ -16,6 +20,18 @@ const routes = [
   { path: '/register', component: Register },
   { path: '/library', component: Library, name:"Library" },
   { path: '/novel/:id/content/:chapterId', component: NovelContent, name:"NovelContent" },
+  { path: "/my-center", name: "MyCenter", component: MyCenter },
+  { path: "/author-dashboard", name: "AuthorDashboard", component: AuthorDashboard },
+  {
+    path: "/author-dashboard/create-work",
+    name: "CreateWork",
+    component: CreateWork,
+  },
+  {
+    path: "/author-dashboard/chapter-editor",
+    name: "ChapterEditor",
+    component: ChapterEditor,
+  },
 
 ];
 
