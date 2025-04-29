@@ -15,6 +15,7 @@ class User(UserMixin, db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), index=True, unique=True)
+    authorname = db.Column(db.String(10), index=True, unique=False)
     email = db.Column(db.String(100), index=True, unique=True)
     gender = db.Column(db.String(1))
     password_hash = db.Column(db.String(128))
@@ -51,6 +52,11 @@ class User(UserMixin, db.Model):
         back_populates='user',
         lazy='dynamic'
     )
+    tippings = db.relationship(
+        'Tipping',
+        back_populates='user',
+        lazy='dynamic'
+    )
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -65,6 +71,7 @@ class User(UserMixin, db.Model):
         return {
             'id': self.id,
             'username': self.username,
+            'authorname': self.authorname,
             'gender': self.gender,
             'email': self.email,
             'is_author': bool(self.is_author),

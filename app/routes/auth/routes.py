@@ -92,8 +92,8 @@ def register():
             return jsonify({
                 "token": user.id,
                 "user": {
-                    "password": user.pa,
-                    "username": user.name,
+                    "password": form.password.data,
+                    "username": user.username,
                     "email": user.email
                 }
             }), 200

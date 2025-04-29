@@ -39,39 +39,80 @@ class Category(db.Model):
 
 class Comment(db.Model):
     __tablename__ = 'comment'
-    
+
     id = db.Column(db.Integer, primary_key=True)
-    
+
     user_id = db.Column(
-        db.Integer, 
+        db.Integer,
         db.ForeignKey('user.id'),
         nullable=False,
         index=True
     )
     article_id = db.Column(
-        db.Integer, 
+        db.Integer,
         db.ForeignKey('article.id'),
         nullable=False,
         index=True
     )
-    
+
     context = db.Column(db.Text, nullable=False)
     time = db.Column(
-        db.DateTime, 
+        db.DateTime,
         default=datetime.now,
         index=True
     )
-    
+
     user = db.relationship('User', back_populates='comments')
     article = db.relationship('Article', back_populates='comments')
-    
+
     def __repr__(self):
         return f'<Comment by User {self.user_id} at {self.time}>'
-    
+
     def to_dict(self):
         return {
             'id': self.id,
             'user_id': self.user_id,
             'content': self.context,
+            'time': self.time.isoformat()
+        }
+
+
+class Tipping(db.Model):
+    __tablename__ = 'tipping'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id'),
+        nullable=False,
+        index=True
+    )
+    article_id = db.Column(
+        db.Integer,
+        db.ForeignKey('article.id'),
+        nullable=False,
+        index=True
+    )
+
+    amount = db.Column(db.Integer, nullable=False)
+
+    time = db.Column(
+        db.DateTime,
+        default=datetime.now,
+        index=True
+    )
+
+    user = db.relationship('User', back_populates='tippings')
+    article = db.relationship('Article', back_populates='tippings')
+
+    def __repr__(self):
+        return f'<Tipped {self.amount} by User {self.user_id} at {self.time}>'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'amount': self.amount,
             'time': self.time.isoformat()
         }

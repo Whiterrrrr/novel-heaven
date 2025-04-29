@@ -10,11 +10,16 @@ from app.models import DBOperations
 @login_required
 def set_author_name():
     form = forms.RenameForm()
-    user = User.query.filter_by(id=current_user.id).first()
-    print("call set_author_name()")
-    result, msg = DBOperations.update_user_settings(user.id, {"username": form.name})
-    if result:
-        return jsonify({"objects": result}), 200
+    if True or form.validate():
+        user = User.query.filter_by(id=current_user.id).first()
+        print("call set_author_name():", form.authorName.data)
+        result, msg = DBOperations.update_user_settings(user.id, {"authorname": form.authorName.data})
+        if result:
+            return jsonify({"objects": result}), 200
+        else:
+            print("rename failed: ", msg)
+            return jsonify({"message": msg}), 401
     else:
-        print("rename failed: ", msg)
-        return jsonify({"message": msg}), 401
+        errors = form.errors.get("new_name", [])
+        print(errors)
+        return jsonify({"status": "error", "errors": errors}), 400

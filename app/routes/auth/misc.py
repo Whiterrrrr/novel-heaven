@@ -16,7 +16,6 @@ def get_user_comments():
     print(result)
     return jsonify({"objects": result}), 200
 
-
 @auth_bp.route('/user/favorites', methods=['GET'])
 @login_required
 def get_user_favorites():

@@ -15,9 +15,10 @@ class LoginForm(FlaskForm):
     submit = SubmitField('登录')
 
 class RenameForm(FlaskForm):
-    name = StringField('new_name', validators=[
-        DataRequired(message='笔名不能为空')
-    ])
+    authorName = StringField('new_name', validators=[])
+
+class TippingForm(FlaskForm):
+    amount = StringField('amount', validators=[])
 
 class SettingsForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(1, 64)])
