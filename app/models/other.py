@@ -71,7 +71,7 @@ class Comment(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
-            'user_id': self.user_id,
+            'author': self.user.username,
             'content': self.context,
-            'time': self.time.isoformat()
+            'createdAt': self.time.isoformat()
         }

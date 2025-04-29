@@ -12,9 +12,11 @@ def create_app():
     from app.routes.main import main_bp
     from app.routes.auth import auth_bp
     from app.routes.articles import articles_bp
+    from app.routes.author import author_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(articles_bp, url_prefix='/articles')
+    app.register_blueprint(articles_bp, url_prefix='/api/novel')
+    app.register_blueprint(author_bp, url_prefix='/api/author')
     
     return app

@@ -29,8 +29,8 @@ class SearchManager():
         
         return DBOperations.search_books(key_word,page,page_size)
     
-    def recommend_books(self):
-        limit = self.data['limit'] if 'limit' in self.data.keys() else 5
+    def recommend_books(self,limit):
+        # limit = self.data['limit'] if 'limit' in self.data.keys() else 27
         return DBOperations.recommend_hot_articles(limit)
     
         
@@ -52,9 +52,10 @@ def keytag_list():
     } for word in tag_list]
         return jsonify(data)
     
-@articles_bp.route("/search_books")
+@articles_bp.route("/search")
 def search_books(): # 按关键词搜索title包含该词的所有文章（分页提供）
-    data = request.get_json()
+    keywords = request.args.get("q", "")
+    data ={'key_word':keywords}
     manager = SearchManager(data)
     
     book_list, total_num, current_page, total_pages = manager.search_books()
@@ -64,7 +65,7 @@ def search_books(): # 按关键词搜索title包含该词的所有文章（分�
     elif book_list == []:
         return jsonify(msg = "The keyword to be searched was not provided"), 404
     else:
-        items = [article.to_dict() for article in book_list]
+        items = [article.to_dict1() for article in book_list]
             
         data = {
             'counts':total_num,
@@ -75,15 +76,15 @@ def search_books(): # 按关键词搜索title包含该词的所有文章（分�
         return jsonify(data)
     
     
-@articles_bp.route("/recommend")
+@articles_bp.route("/hot",methods=['GET'])
 def recommend(): # 简易推荐书目
-    data = request.get_json()
+    data = {}
     manager = SearchManager(data)
     
-    recommend_articles = manager.recommend_books()
+    recommend_articles = manager.recommend_books(27)
     
     if recommend_articles == []:
-        return jsonify(msg = "Empty recommendation"), 404
+        return jsonify(msg = "错误描述"), 404
     else:
         items = [article.to_dict() for article in recommend_articles]
         return jsonify(items)

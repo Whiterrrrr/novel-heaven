@@ -74,12 +74,20 @@ class Article(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
-            'article_name': self.article_name,
-            'author_id': self.author_id,
-            'latest_chapter': self.latest_update_chapter_name,
-            'word_count': self.word_count,
+            'title': self.article_name,
+            'category': self.category.name
+            #'latest_chapter': self.latest_update_chapter_name,
+            #'word_count': self.word_count,
         }
-        
+    def to_dict1(self):
+        return {
+            'id': self.id,
+            'title': self.article_name,
+            'author':self.author.username,
+            'status':self.status
+            
+        }
+    
         
 class Chapter(db.Model):
     __tablename__ = 'chapter'
@@ -123,7 +131,7 @@ class Chapter(db.Model):
             'chapter_name': self.chapter_name,
             'word_count': self.word_count,
             'update_time': self.latest_update_time.isoformat(),
-            'is_draft': self.is_draft
+            'is_draft': self.is_draft,
         }
         
         

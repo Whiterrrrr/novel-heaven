@@ -20,11 +20,7 @@ class CategoryManager():
     def get_category_hot_list(self):
         limit = self.data['limit'] if 'limit' in self.data.keys() else 10
         
-        return DBOperations.get_category_hot_list(limit)
-    
-    
-    
-    
+        return DBOperations.get_category_hot_list(limit) 
     
 """     
 @articles_bp.route("/book_category")

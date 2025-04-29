@@ -25,12 +25,9 @@ class CommentManager():
         return DBOperations.delete_comment(comment_id, verify)
                
     def get_article_comment(self,article_id):
-        try:
-            page = self.data['page']
-            per_page = self.data['per_page']
-        except :
-            return [], -1
-        
+    
+        page = self.data['page'] if 'page' in self.data.keys() else 1
+        per_page = self.data['per_page'] if 'per_page' in self.data.keys() else 20
         include_user_info = self.data['include_user_info'] if 'include_user_info' in self.data.keys() else False
         
         return DBOperations.get_article_comments(article_id, page, per_page, include_user_info)
@@ -61,15 +58,16 @@ class CommentManager():
         return DBOperations.make_like(article_id)
         
         
-@articles_bp.route("/comment/make/<int:article_id>", methods=['POST','GET' ])
+@articles_bp.route("/<int:article_id>/comments", methods=['POST','GET' ])
 #@login_required
 def make_comment(article_id):
     data = request.get_json()
+    #data['user_id'] = current_user.id
+    
     manager = CommentManager(data)
     if request.method == 'GET':
 
         results, page_total_num = manager.get_article_comment(article_id)
-        
         """
         def build_tree(parent_id=None):
             return [{
@@ -82,10 +80,8 @@ def make_comment(article_id):
         """
         if page_total_num > 0:
             return jsonify(results), 200
-        elif page_total_num == -1:
-            return jsonify(msg = "Missing essential information")
         else:
-            return jsonify(msg = "There is no comment about this article")
+            return jsonify(msg = "Error loading comments")
     
     else:
         new_comment = manager.create_comment(article_id)

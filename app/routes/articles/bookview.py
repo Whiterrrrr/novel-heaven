@@ -15,6 +15,14 @@ class ViewManager():
         
         return DBOperations.get_article_statistics(article_id)
     
+    def show_article_chapter_stat(self):
+        try:
+            article_id = self.data['article_id']
+        except :
+            return -1
+        
+        return DBOperations.get_article_chapter_summary(article_id)
+    
     def get_article_data(self):
         try:
             article_id = self.data['article_id']
@@ -26,15 +34,16 @@ class ViewManager():
     def get_chapter_data(self):
         try:
             chapter_id = self.data['chapter_id']
+            
         except :
             return -1
         
         return DBOperations.get_chapter_data(chapter_id = chapter_id) 
-    
-@articles_bp.route("/bookview/article_stat")
-@login_required
-def get_article_stat():
-    data = request.get_json()
+        
+@articles_bp.route("/bookview/<int:novel_id>")
+#@login_required
+def get_article_stat(novel_id):
+    data = {'article_id':novel_id}
     manager = ViewManager(data)
     
     stat = manager.show_article_stat()
@@ -62,17 +71,44 @@ def get_article_data():
     else:
         return jsonify(chapters)
     
-@articles_bp.route("/bookview/article/chapter")
-@login_required
+#@articles_bp.route("/<int:novel_id>/chapters/<int:chapter_id>/content")
+@articles_bp.route("/chapters")
+# @login_required
 def get_chapter_data():
     data = request.get_json()
     manager = ViewManager(data)
     
     chapter = manager.get_chapter_data()
     
+    path = chapter.text_path
+    
+    with open(path, "r", encoding="utf-8") as file:
+        content = file.read()
+    
+    result = {
+        'id':chapter.id,
+        'title':chapter.chapter_name,
+        'content':content
+    }    
+    
     if not chapter:
         return jsonify(msg = 'Error')
     elif chapter == -1:
         return jsonify(msg = 'Non valid chapter_id')
     else:
-        return jsonify(chapter.to_dict())
+        return jsonify(result)
+
+
+@articles_bp.route("/<int:novel_id>/chapters")
+def get_chapter_stat(novel_id):
+    data = {'article_id':novel_id}
+    manager = ViewManager(data)
+    
+    stat = manager.show_article_chapter_stat()
+    
+    if not stat:
+        return jsonify(msg = 'No such article'), 404
+    elif stat == -1:
+        return jsonify(msg = 'Non valid article id')
+    else:
+        return stat

@@ -349,14 +349,20 @@ class DBOperations:
                 return None
                 
             return {
-                'views': article.views,
-                'likes': article.likes,
-                'comments': Comment.query.filter_by(article_id=article_id).count(),
-                'bookmarks': BookShelf.query.filter_by(article_id=article_id).count()
+                'id':article.id,
+                'title':article.article_name,
+                'author':article.author.username,
+                'category':article.category.name,
+                'updateTime':article.latest_update_chapter_name,
+                'description':article.intro
+                #'views': article.views,
+                #'likes': article.likes,
+                #'comments': Comment.query.filter_by(article_id=article_id).count(),
+                #'bookmarks': BookShelf.query.filter_by(article_id=article_id).count()
             }
         except SQLAlchemyError:
             return None
-
+        
     @staticmethod
     def get_reading_history(user_id):
         try:
@@ -861,3 +867,14 @@ class DBOperations:
             ).limit(limit).all()
         except SQLAlchemyError:
             return []
+        
+    @staticmethod
+    def get_article_chapter_summary(article_id):
+        """
+        获取article_id的所有章节的id和title
+        { "id": 1, "title": "第一章 替嫁" },
+        { "id": 2, "title": "第二章 拿惯银枪的手" 
+        ...
+        
+        """
+        

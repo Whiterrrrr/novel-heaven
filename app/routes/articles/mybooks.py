@@ -30,6 +30,7 @@ class BookManager():
         else:
             return [book_shelf.to_dict() for book_shelf in query]
 
+    """
     def add_to_bookshelf(self):
         try:
             user_id = self.data['user_id']
@@ -52,7 +53,25 @@ class BookManager():
             return -1
         
         return DBOperations.delete_book_from_shelf(user_id, article_id)
-
+    """
+    
+    def handle_favorite(self):
+        try:
+            user_id = self.data['user_id']
+            status = self.data['favorite']
+            article_id = self.data['article_id']
+        except :
+            return -1
+        
+        if status:
+            _, exist = DBOperations.add_to_bookshelf(user_id, article_id)
+            if exist:
+                return 2
+            else:
+                return True
+        else:
+            return DBOperations.delete_book_from_shelf(user_id, article_id)
+        
     def get_last_reading_history(self):
         try:
             user_id = self.data['user_id']
@@ -95,11 +114,30 @@ def mybooks_list():
     else:
         return jsonify(result)
 
-
-@articles_bp.route("/mybookshelf/add", methods=['POST'])
+@articles_bp.route("/<int:novel_id>/favorite", methods=['POST'])
 #@login_required
-def add_book_to_shelf(): 
+def handle_favorite(novel_id): 
     data = request.get_json()
+    data['article_id'] = novel_id
+    #data['user_id'] = current_user.id
+    manager = BookManager(data)
+    
+    status = manager.handle_favorite()
+    
+    if status== 2:
+        return jsonify(msg='Target book has been in your personal shelf')
+    elif status == False:
+        return jsonify(msg='Error')
+    else:
+        return jsonify(msg = 'Successful')
+    
+"""  
+@articles_bp.route("/<int:novel_id/favorite", methods=['POST'])
+#@login_required
+def add_book_to_shelf(novel_id): 
+    data = request.get_json()
+    #data['user_id'] = current_user.id
+    
     manager = BookManager(data)
     
     book_select = manager.add_to_bookshelf()
@@ -127,7 +165,7 @@ def delete_book_from_shelf():
         return jsonify(msg = 'Book chosen to delete is not in your personal shelf'), 400
     else:
         return jsonify(msg = 'Successfully delete')
-
+"""
 
 @articles_bp.route("/mybookshelf/last_read")
 @login_required
