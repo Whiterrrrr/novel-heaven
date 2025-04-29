@@ -67,6 +67,12 @@ class Article(db.Model):
         lazy='dynamic',
         cascade='all, delete-orphan'
     )
+    tippings = db.relationship(
+        'Tipping',
+        back_populates='article',
+        lazy='dynamic',
+        cascade='all, delete-orphan'
+    )
     
     def __repr__(self):
         return f'<Article {self.article_name}>'

@@ -41,6 +41,7 @@ def init_users():
         db.session.query(Article).delete()
         db.session.query(Category).delete()
         db.session.query(User).delete()
+        db.session.query(Tipping).delete()
         for data in init_test_categories():
             category = Category(**data)
             db.session.add(category)
@@ -94,7 +95,7 @@ def init_users():
                 user_data.get("is_author", False),
             )
 
-@staticmethod
+
 def process_books():
     with app.app_context():
         for author_dir in SAMPLE_DIR.iterdir():
@@ -132,7 +133,7 @@ def process_books():
                         }
                     )
 
-@staticmethod
+
 def init_interactions():
     with app.app_context():
         articles = DBOperations.get_latest_articles(limit=100)
@@ -163,12 +164,23 @@ def init_interactions():
             (yang.id, "期待后续章节更新！"),
             (lin.id, "文笔还可以再精炼些")
         ]
+        tippings = [
+            (lin.id, 5),
+            (yang.id, 10),
+            (lin.id, 5)
+        ]
         for article in articles:
             for user_id, content in comments:
                 DBOperations.create_comment(
                     user_id=user_id,
                     article_id=article.id,
                     content=content
+                )
+            for user_id, tip in tippings:
+                DBOperations.create_tipping(
+                    user_id=user_id,
+                    article_id=article.id,
+                    amount=tip
                 )
 
 if __name__ == "__main__":

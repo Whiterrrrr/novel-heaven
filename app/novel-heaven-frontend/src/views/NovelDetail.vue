@@ -221,7 +221,7 @@ async function handleCoinClick() {
   }
   try {
     // 向后端申请扣币，接口路径可按实际修改
-    await axios.post(`/api/novel/${novelId}/coin`);
+    await axios.post(`/api/novel/${novelId}/tip`);
     // TODO: 更新用户余额或给个成功提示
   } catch (err) {
     // 余额不足后端返回 400 时

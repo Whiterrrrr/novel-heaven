@@ -1,65 +1,38 @@
 from datetime import datetime
 from flask import Blueprint, jsonify, request
-from app.models import SignIn, Transaction, Article
+from app.models import Article, User, DBOperations
 from flask_login import current_user, login_required
 from app.routes.auth import auth_bp
 from app.routes.articles import articles_bp
 from app.models import db
+from app.routes.auth.forms import TippingForm
 
 
-'''
-签到
-POST /api/user/sign_in
-Headers: Authorization: Bearer <token>
-Response: 
-{
-  "code": 200,
-  "msg": "签到成功",
-  "balance": 110
-}
-'''
-@auth_bp.route('/sign_in', methods=['POST'])
+@auth_bp.route('/user/rewards', methods=['GET', 'POST'])
 @login_required
-def sign_in():
-    today = datetime.utcnow().date()
-    # 检查今日是否已签到
-    existing_sign_in = SignIn.query.filter_by(user_id=current_user.id, date=today).first()
-    if existing_sign_in:
-        return jsonify({"code": 400, "msg": "今日已签到"}), 400
+def get_reward():
+    user = User.query.filter_by(id=current_user.id).first()
+    print("call get reward", user.balance)
+    result = DBOperations.get_user_tippings(user.id)
+    # return jsonify({"records": [{ id, amount, bookTitle, date }], "balance": user.balance}), 200
+    return jsonify({"result": result,"balance": user.balance}), 200
 
-    # 新增签到记录并更新余额
-    sign_in = SignIn(user_id=current_user.id)
-    current_user.balance += 10  # 假设每次签到奖励 10 虚拟币
-
-    db.session.add(sign_in)
-    db.session.commit()
-
-    return jsonify({"code": 200, "msg": "签到成功", "balance": current_user.balance})
-
-
-
-'''
-打赏
-POST /api/articles/5/tip
-Headers: Authorization: Bearer <token>
-Body: {"amount": 50}
-Response: 
-{
-  "code": 200,
-  "msg": "打赏成功",
-  "new_balance": 60,
-  "transaction_id": 3
-}
-'''
-@articles_bp.route('/<int:article_id>/tip', methods=['POST'])
+@auth_bp.route('/novel/<int:article_id>/tip', methods=['POST'])
 @login_required
 def tip_author(article_id):
+    print("call tip_author()")
     article = Article.query.get_or_404(article_id)
-    author = article.author  # 假设 Article 模型有 author 关系指向 User
+    print(article.article_name)
+    author = DBOperations.get_user_by_id(article.author_id)
+    print(author.username)
 
     # 获取打赏金额
-    data = request.get_json()
-    amount = data.get('amount', 0)
+    form = TippingForm()
+    amount = form.amount.data
+    print("request data:", amount)
+    if amount is None:
+        amount = 1
+
     if not isinstance(amount, int) or amount <= 0:
         return jsonify({"code": 400, "msg": "金额无效"}), 400
 
@@ -73,16 +46,8 @@ def tip_author(article_id):
         current_user.balance -= amount
         # 增加作者余额
         author.balance += amount
+        tipping = DBOperations.create_tipping(current_user.id, article_id, amount)
 
-        # 记录交易
-        transaction = Transaction(
-            from_user_id=current_user.id,
-            to_user_id=author.id,
-            article_id=article.id,
-            amount=amount
-        )
-        db.session.add(transaction)
-        db.session.commit()
     except Exception as e:
         db.session.rollback()
         return jsonify({"code": 500, "msg": "打赏失败"}), 500
@@ -91,5 +56,5 @@ def tip_author(article_id):
         "code": 200,
         "msg": "打赏成功",
         "new_balance": current_user.balance,
-        "transaction_id": transaction.id
+        "transaction_id": tipping.id
     })

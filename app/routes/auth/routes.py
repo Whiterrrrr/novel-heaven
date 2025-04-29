@@ -2,7 +2,7 @@ from flask import render_template, redirect, url_for, flash, jsonify, request, s
 from flask_login import logout_user, current_user, login_required
 from flask_wtf.csrf import validate_csrf
 from werkzeug.exceptions import BadRequest
-
+from app import write_log
 from app.models import *
 from app.routes.auth import auth_bp
 from app.routes.auth.forms import LoginForm, RegistrationForm, SettingsForm
@@ -19,27 +19,40 @@ def admin_required(fn):
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+        return jsonify({"message": "Already logged in"}), 400
     
     form = LoginForm()
-    if form.validate_on_submit():
+    print("call login", form.email.data, form.password.data)
+    if True or form.validate_on_submit():
+        print("form validated")
         success, user, message = DBOperations.authenticate_user(
             email=form.email.data,
             password=form.password.data,
-            remember=form.remember_me.data
+            # remember=form.remember_me.data
         )
         
         if success:
             reward_given, amount = DBOperations.check_and_reward_daily_login(user)
             if reward_given:
                 flash(f'获得每日登录奖励{amount}金币！', 'success')
-            
-            return redirect(url_for('main.dashboard'))
+
+            return jsonify({
+                "token": user.balance,
+                "user": {
+                    "id": user.id,
+                    "name": user.username,
+                    "email": user.email
+                }
+            }), 200
         
         flash(message, 'danger')
-    
-    return render_template('auth/login.html', title='登录', form=form)
+    else:
+        print("验证失败原因:", form.errors)
+
+    return jsonify({"message": "Invalid email or password"}), 401
+
 
 
 @auth_bp.route('/logout', methods=['GET', 'POST'])
@@ -65,8 +78,10 @@ def logout():
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegistrationForm()
-    if form.validate_on_submit():
-        success, user, message = DBOperations.register_new_user(
+    print("call register", form.username.data, form.email.data, form.password.data)
+    if True or form.validate_on_submit():
+        print("form validated")
+        success, user, message = DBOperations.create_user(
             username=form.username.data,
             email=form.email.data,
             password=form.password.data
@@ -74,11 +89,20 @@ def register():
         
         if success:
             flash(message, 'success')
-            return redirect(url_for('auth.login'))
+            return jsonify({
+                "token": user.id,
+                "user": {
+                    "password": form.password.data,
+                    "username": user.username,
+                    "email": user.email
+                }
+            }), 200
         else:
             flash(message, 'danger')
-    
-    return render_template('auth/register.html', title='注册', form=form)
+
+    else:
+        print("验证失败原因:", form.errors)
+    return jsonify({"message": "registration failed"}), 401
 
 
 @auth_bp.route('/settings', methods=['GET', 'PUT'])

@@ -2,7 +2,6 @@ from flask import Blueprint, request, jsonify
 from . import author_bp
 from app.models import DBOperations
 import os
-import requests
 
 DEEPSEEK_API_URL = "https://api.siliconflow.cn/v1/chat/completions"
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")

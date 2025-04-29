@@ -1,3 +1,5 @@
+from flask import session
+
 from .base import db
 from .user import *
 from .book import *
@@ -73,7 +75,7 @@ class DBOperations:
                 ).first():
                     return False, "邮箱已被注册"
 
-            allowed_fields = {'username', 'email', 'gender', 'password', 'is_author', 'joined_at', 'last_seen', 'balance'}
+            allowed_fields = {'username', 'email', 'authorname', 'gender', 'password', 'is_author', 'joined_at', 'last_seen', 'balance'}
             for field, value in update_data.items():
                 if field in allowed_fields:
                     if field == 'password':
@@ -110,7 +112,7 @@ class DBOperations:
             
             user.last_seen = datetime.utcnow()
             db.session.commit()
-            
+            session['user_id'] = user.id
             login_user(user, remember=remember)
             return True, user, "登录成功"
         except SQLAlchemyError:
@@ -125,7 +127,7 @@ class DBOperations:
         :return: (reward_given: bool, amount: int)
         """
         try:
-            if user.last_seen.date() == date.today():
+            if False and user.last_seen.date() == date.today():
                 return False, 0
             
             reward = 10
@@ -160,11 +162,14 @@ class DBOperations:
     
     @staticmethod
     def create_user(username, email, password, gender=None, is_author=False):
-        if User.query.filter((User.username == username) | (User.email == email)).first():
+        print(User.query.filter((User.username == username) or (User.email == email)).first())
+        if User.query.filter((User.username == username) or (User.email == email)).first() is not None:
+            print("Email or username used")
             return None
         
         new_user = User(
             username=username,
+            authorname='',
             email=email,
             gender=gender,
             joined_at=datetime.utcnow(),
@@ -176,9 +181,10 @@ class DBOperations:
         try:
             db.session.add(new_user)
             db.session.commit()
-            return new_user
-        except SQLAlchemyError:
+            return True, new_user, "造人成功"
+        except SQLAlchemyError as e:
             db.session.rollback()
+            print("error code:", str(e))
             return None
     
     @staticmethod
@@ -187,7 +193,7 @@ class DBOperations:
         注意这里返回的是一个list!
         """
         return Article.query.order_by(Article.latest_update_time.desc()).limit(limit).all()
-            
+
     @staticmethod
     def create_comment(user_id, article_id, content):
         try:
@@ -204,6 +210,27 @@ class DBOperations:
             return new_comment
         except SQLAlchemyError:
             db.session.rollback()
+            return None
+
+
+    @staticmethod
+    def create_tipping(user_id, article_id, amount):
+        try:
+            if not Article.query.get(article_id):
+                print("invalid book id")
+                return None
+
+            new_tipping = Tipping(
+                user_id=user_id,
+                article_id=article_id,
+                amount=amount
+            )
+            db.session.add(new_tipping)
+            db.session.commit()
+            return new_tipping
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            print("error code:", str(e))
             return None
         
     @staticmethod
@@ -226,6 +253,35 @@ class DBOperations:
                 if include_user_info:
                     comment, user = record
                     result = comment.to_dict()
+                    result['user'] = user.to_dict()
+                else:
+                    result = record.to_dict()
+                results.append(result)
+
+            return results, pagination.pages
+        except SQLAlchemyError:
+            return [], 0
+
+    @staticmethod
+    def get_article_tippings(article_id, page=1, per_page=20, include_user_info=False):
+        try:
+            base_query = Tipping.query.filter_by(article_id=article_id)
+
+            if include_user_info:
+                base_query = base_query.join(User, Tipping.user_id == User.id)
+                base_query = base_query.add_entity(User)
+
+            pagination = base_query.order_by(Tipping.time.desc()).paginate(
+                page=page,
+                per_page=per_page,
+                error_out=False
+            )
+
+            results = []
+            for record in pagination.items:
+                if include_user_info:
+                    tipping, user = record
+                    result = tipping.to_dict()
                     result['user'] = user.to_dict()
                 else:
                     result = record.to_dict()
@@ -267,6 +323,20 @@ class DBOperations:
             return []
 
     @staticmethod
+    def get_user_tippings(user_id, days=None, limit=100):
+        try:
+            query = Tipping.query.filter_by(user_id=user_id)
+
+            if days:
+                time_threshold = datetime.utcnow() - timedelta(days=days)
+                query = query.filter(Tipping.time >= time_threshold)
+
+            tippings = query.order_by(Tipping.time.desc()).limit(limit).all()
+            return [c.to_dict() for c in tippings]
+        except SQLAlchemyError:
+            return []
+
+    @staticmethod
     def get_recent_comments(hours=24, limit=50):
         try:
             time_threshold = datetime.utcnow() - timedelta(hours=hours)
@@ -279,6 +349,24 @@ class DBOperations:
 
             return [{
                 "comment": c[0].to_dict(),
+                "article_title": c[1]
+            } for c in query]
+        except SQLAlchemyError:
+            return []
+
+    @staticmethod
+    def get_recent_tippings(hours=24, limit=50):
+        try:
+            time_threshold = datetime.utcnow() - timedelta(hours=hours)
+
+            query = db.session.query(Tipping, Article.article_name) \
+                .join(Article, Tipping.article_id == Article.id) \
+                .filter(Tipping.time >= time_threshold) \
+                .order_by(Tipping.time.desc()) \
+                .limit(limit)
+
+            return [{
+                "tipping": c[0].to_dict(),
                 "article_title": c[1]
             } for c in query]
         except SQLAlchemyError:

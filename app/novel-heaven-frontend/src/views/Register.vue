@@ -35,7 +35,7 @@
           required
           minlength="10"
           maxlength="10"
-          pattern="(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{10}"
+          pattern="(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{10}"
           title="Exactly 10 characters, letters and digits mixed"
         />
 
