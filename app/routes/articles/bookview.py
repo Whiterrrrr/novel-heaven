@@ -31,14 +31,6 @@ class ViewManager():
         
         return DBOperations.get_chapter_data(article_id=article_id)
        
-    def get_chapter_data(self):
-        try:
-            chapter_id = self.data['chapter_id']
-            
-        except :
-            return -1
-        
-        return DBOperations.get_chapter_data(chapter_id = chapter_id) 
         
 @articles_bp.route("/bookview/<int:novel_id>")
 # @login_required
@@ -76,15 +68,15 @@ def get_article_data():
     else:
         return jsonify(chapters)
     
-#@articles_bp.route("/<int:novel_id>/chapters/<int:chapter_id>/content")
-@articles_bp.route("/chapters")
+@articles_bp.route("/<int:novel_id>/chapters/<int:chapter_id>/content")
+#@articles_bp.route("/chapters")
 # @login_required
-def get_chapter_data():
-    data = request.get_json()
+def get_chapter_data(novel_id, chapter_id):
+    data = {'article_id':novel_id}
     manager = ViewManager(data)
     
-    chapter = manager.get_chapter_data()
-    
+    chapter_list = manager.get_article_data()
+    chapter = chapter_list[chapter_id-1]
     path = chapter.text_path
     
     with open(path, "r", encoding="utf-8") as file:

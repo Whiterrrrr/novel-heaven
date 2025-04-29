@@ -29,8 +29,8 @@ def create_app():
         print(f"URL路径: {rule.rule}")
         print(f"允许的HTTP方法: {rule.methods}")
         print("------")'''
-    print(app.url_map)
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    #print(app.url_map)
+    #app.run(host="0.0.0.0", port=5000, debug=True)
 
 
     
