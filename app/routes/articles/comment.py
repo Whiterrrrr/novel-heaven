@@ -59,7 +59,7 @@ class CommentManager():
         
         
 @articles_bp.route("/<int:article_id>/comments", methods=['POST','GET' ])
-#@login_required
+@login_required
 def make_comment(article_id):
     data = request.get_json()
     #data['user_id'] = current_user.id
@@ -99,7 +99,7 @@ def make_comment(article_id):
      
     
 @articles_bp.route("/comment/delete/<int:comment_id>", methods=['POST'])
-#@login_required
+@login_required
 def delete_comment(comment_id):
     data = request.get_json()
     manager = CommentManager(data)
@@ -112,7 +112,7 @@ def delete_comment(comment_id):
 
 
 @articles_bp.route("/comment/userTotal", methods=['GET'])
-#@login_required
+@login_required
 def get_user_comments():
     data = request.get_json()
     manager = CommentManager(data)
@@ -133,7 +133,7 @@ def get_user_comments():
 
 
 @articles_bp.route("/comment/recent", methods=['GET'])
-#@login_required
+@login_required
 def get_recent_comments():
     data = request.get_json()
     manager = CommentManager(data)

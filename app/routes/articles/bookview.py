@@ -41,13 +41,18 @@ class ViewManager():
         return DBOperations.get_chapter_data(chapter_id = chapter_id) 
         
 @articles_bp.route("/bookview/<int:novel_id>")
-#@login_required
+# @login_required
 def get_article_stat(novel_id):
     data = {'article_id':novel_id}
     manager = ViewManager(data)
     
     stat = manager.show_article_stat()
     
+    article_name= stat['title']
+    author = stat['author']
+    
+    img_path = 'book_smaple/'+stat['author']+'/'+stat['title']+'/img.jpg'
+    stat['cover'] = img_path
     if not stat:
         return jsonify(msg = 'No such article'), 404
     elif stat == -1:
@@ -56,7 +61,7 @@ def get_article_stat(novel_id):
         return stat
     
 @articles_bp.route("/bookview/article")
-@login_required
+# @login_required
 def get_article_data():
     data = request.get_json()
     manager = ViewManager(data)

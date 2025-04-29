@@ -99,7 +99,7 @@ class BookManager():
             return [record.to_dict() for record in query]
     
 @articles_bp.route("/mybookshelf",methods=['GET'])
-#@login_required
+@login_required
 def mybooks_list():
     data = request.get_json()
     manager = BookManager(data)
@@ -115,7 +115,7 @@ def mybooks_list():
         return jsonify(result)
 
 @articles_bp.route("/<int:novel_id>/favorite", methods=['POST'])
-#@login_required
+@login_required
 def handle_favorite(novel_id): 
     data = request.get_json()
     data['article_id'] = novel_id
