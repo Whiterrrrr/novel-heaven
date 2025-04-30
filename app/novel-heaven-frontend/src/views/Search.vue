@@ -20,10 +20,21 @@
             </button>
           </div>
   
-          <div class="result-count">共 {{ filtered.length }} 项相关的结果</div>
+          <div class="result-count">共 {{totalCount}} 项相关的结果</div>
   
           <div class="grid">
-            <div v-for="novel in filtered" :key="novel.id" class="book-card">
+            <div class="pagination">
+          <button
+            :disabled="currentPage<=1"
+            @click="changePage(currentPage-1)"
+            >上一页</button>
+          <span>{{ currentPage }} / {{ totalPages }}</span>
+          <button
+            :disabled="currentPage>=totalPages"
+            @click="changePage(currentPage+1)"
+            >下一页</button>
+          </div>
+            <div v-for="novel in searchResults" :key="novel.id" class="book-card">
               <img :src="novel.cover" class="cover" />
               <div class="info">
                 <div class="title">{{ novel.title }}</div>
@@ -46,7 +57,6 @@
   <script setup>
   import { ref, computed, watch,onMounted} from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import novels from '@/data/novels.js';
   import axios from 'axios'
   
   const route = useRoute();
@@ -55,83 +65,78 @@
   const query = ref('');
   const hasSearched = ref(false);
   const tab = ref('related');
-  const searchResults = ref([])
+  const searchResults = ref([]);
+  const currentPage = ref(1);
+  const totalPages  = ref(1);
+  const totalCount  = ref(0);
+  const pageSize    = 10;
 
-async function searchNovels(q) {
-  try {
-    const { data } = await axios.get(
-      `/api/novel/search?q=${encodeURIComponent(q)}`
-    )
-    searchResults.value = data
-  } catch (err) {
-    console.error('搜索接口调用失败：', err)
-    searchResults.value = []
-  }
-}
+   async function searchNovels(q) {
+   try {
+     const { data } = await axios.get('/api/novel/search', {
+       params: {
+         q:         q.trim(),
+         page:      currentPage.value,
+         page_size: pageSize
+       }
+     })
+     // 后端返回 { counts, items, page, total_pages }
+     searchResults.value = data.items;
+     totalCount.value    = data.counts;
+     totalPages.value    = data.total_pages;
+     currentPage.value   = data.page;
+   } catch (err) {
+     console.error('搜索接口调用失败：', err);
+     searchResults.value = [];
+     totalCount.value    = 0;
+     totalPages.value    = 1;
+     currentPage.value   = 1;
+   }
+ }
+
 
 onMounted(() => {
   const q = route.query.q;
   if (typeof q === 'string' && q.trim()) {
     query.value = q;
     hasSearched.value = true;
-    //searchNovels(q); 
+    searchNovels(q); 
   }
 });
-//测试调用函数，需要使用这个
-//async function doSearch() {
-//  const q = query.value.trim()
-//  if (!q) {
-//    hasSearched.value = false
-//    return
-//  }
-//  hasSearched.value = true
-  // 更新路由参数
-//  router.push({ path: '/search', query: { q } })
-  // 调用后端搜索
-//  await searchNovels(q)
-//}
 
-//  const filtered = computed(() => {
-//  if (!hasSearched.value) return []
-  // 仅“相关”标签，直接展示后端结果
-//  return tab.value === 'related' ? searchResults.value : []
-//})
+async function doSearch() {
+  const q = query.value.trim()
+  if (!q) {
+    hasSearched.value = false
+    return
+  }
+  hasSearched.value = true;
+  currentPage.value = 1;
+  // 更新 URL
+  router.push({ path: '/search', query: { q, page: currentPage.value } });
+  
+}
 
  //监听路由变化，保持页面与 URL 同步
-watch(
-  () => route.query.q,
-    (newQ) => {
-    if (typeof newQ === 'string' && newQ.trim()) {
-      query.value = newQ
-      hasSearched.value = true
-      searchNovels(newQ)
-    } else {
-      hasSearched.value = false
-      searchResults.value = []
-    }
-  }
-)
-  function doSearch() {
-    const q = query.value.trim();
-    if (!q) {
-      hasSearched.value = false;
-      return;
-    }
-    hasSearched.value = true;
-    // 把关键词推到 URL，便于刷新或分享恢复
-    router.push({ path: '/search', query: { q } });
-  }
-  
-  // “相关”标签下的过滤逻辑
-  const filtered = computed(() => {
-    if (!hasSearched.value) return [];
-    const q = query.value.trim().toLowerCase();
-    return novels.filter(
-      n =>
-        n.title.toLowerCase().includes(q) ||
-        n.author.toLowerCase().includes(q)
-    );
-  });
+ watch(
+   () => route.query,
+   async ({ q, page }) => {
+     if (typeof q === 'string' && q.trim()) {
+       query.value       = q;
+       currentPage.value = parseInt(page) || 1;
+       hasSearched.value = true;
+       await searchNovels(q);
+     } else {
+       hasSearched.value = false;
+       searchResults.value = [];
+     }
+   }
+ )
+  function changePage(p) {
+  currentPage.value = p
+  router.push({ path: '/search', query: { q: query.value, page: p } })
+}
+
   </script>
   
   
@@ -263,6 +268,17 @@ watch(
   .read-now:hover {
     text-decoration: underline;
   }
+  .pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
   </style>
   
   

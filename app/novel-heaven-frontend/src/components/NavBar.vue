@@ -58,7 +58,6 @@ import { useUserStore } from '@/store/index';
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
-
 const searchQuery = ref('');
 const isScrolled = ref(false);
 

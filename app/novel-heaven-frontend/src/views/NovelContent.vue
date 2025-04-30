@@ -38,33 +38,29 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-//chatpeter1Content,chatpeter2Content,chatpeter3Content都是为了测试布局的假数据
-import { chapter1Content } from '@/data/chapterContents.js';
-import { chapter2Content, chapter3Content } from '../data/chapterContents';
+import { watch } from 'vue';
 import axios from 'axios'
 
 const route = useRoute();
 const router = useRouter();
-const novelId = route.params.id;
-const chapterId = route.params.chapterId;
+const novelId = route.params.novelId;
+const chapterIdxParam = computed(() => parseInt(route.params.chapterId, 10) || 1);
 const novelTitle = ref('');
-
-//假数据
-onMounted(() => {
-  novelTitle.value = '惜花芷';
-});
-//假数据
+//const chapters = ref([]);
 const chapters = ref([
-  { id: 1, title: '第一章 替嫁', content: chapter1Content },
-  { id: 2, title: '第二章 拿惯银枪的手', content: chapter2Content },
-  { id: 3, title: '第三章 掐着点回来圆房？', content: chapter3Content },
-  // 更多章节...
+  { id: 1, title: '第一章 替嫁' },
+  { id: 2, title: '第二章 拿惯银枪的手' },
+  { id: 3, title: '第三章 掐着点回来圆房？' },
+  
 ]);
-
+const currentChapter = ref({ title: '', content: '' })
+const currentIndex = computed(() => chapterIdxParam.value - 1)
+const isFirstChapter = computed(() => currentIndex.value <= 0)
+const isLastChapter  = computed(() => currentIndex.value >= chapters.value.length - 1)
 
  async function loadNovelMeta() {
   try {
-    const { data } = await axios.get(`/api/novel/${novelId}`)
+    const { data } = await axios.get(`/api/novel/bookview/${novelId}`)
     novelTitle.value = data.title
   } catch (err) {
     console.error('加载小说元信息失败：', err)
@@ -83,30 +79,28 @@ async function loadChaptersList() {
 
 async function loadChapterContent() {
   try {
-    const cid = chapterId.value
+    const idx = chapterIdxParam.value
     const { data } = await axios.get(
-      `/api/novel/${novelId}/chapters/${cid}/content`
+      `/api/novel/${novelId}/chapters/${idx}/content`
     )
+   
     currentChapter.value = data
   } catch (err) {
     console.error('加载章节内容失败：', err)
   }
 }
-// 监听页面参数变化，翻页时自动刷新正文，与后端连接使用
-//watch(
-//  () => route.params.chapterId,
-//  newId => {
-//    chapterId.value = newId
-//    loadChapterContent()
-//  }
-//)
 
-//测试调用函数请用这个，把上面的假数据注释掉
-//onMounted(() => {
-//  loadNovelMeta()
-//  loadChaptersList()
-//  loadChapterContent()
-//})
+watch(
+  () => route.params.chapterId,
+  loadChapterContent,
+  { immediate: true }
+);
+
+onMounted(() => {
+  loadNovelMeta()
+  loadChaptersList()
+  loadChapterContent()
+})
 
 const contentLines = computed(() =>
   currentChapter.value.content
@@ -115,35 +109,29 @@ const contentLines = computed(() =>
     .filter(l => l)        // 去掉空行
 );
 
-const currentChapter = computed(() => {
-  const cid = parseInt(route.params.chapterId, 10);
-  return chapters.value.find(ch => ch.id === cid) || { title: '', content: '' };
-});
 
-// 计算下一章（如果有）
-const nextChapter = computed(() => {
-  const cid = parseInt(route.params.chapterId, 10);
-  return chapters.value.find(ch => ch.id === cid + 1) || null;
-});
-// 计算上一章（如果有）
-const prevChapter = computed(() => {
-  const cid = parseInt(route.params.chapterId, 10);
-  return chapters.value.find(ch => ch.id === cid - 1) || null;
-});
 
-const isFirstChapter = computed(() => !prevChapter.value);
-
-const isLastChapter = computed(() => {
-  const cid = parseInt(route.params.chapterId, 10);
-  return cid === chapters.value.length;  // 如果当前章节是最后一章，返回 true
-});
 // 跳转到下一章
 function goToNextChapter() {
-  router.push(`/novel/${novelId}/content/${nextChapter.value.id}`);
+  const nextSeq = currentIndex.value + 2;  
+   router.push({
+    name: 'NovelContent',
+     params: {
+       novelId:    novelId,
+       chapterId:  nextSeq
+     }
+  })
 }
 // 跳转到上一章
 function goToPrevChapter() {
-  router.push(`/novel/${novelId}/content/${prevChapter.value.id}`);
+      const prevSeq = currentIndex.value;  
+        router.push({
+     name: 'NovelContent',
+     params: {
+       novelId:   novelId,
+       chapterId: prevSeq
+     }
+   })
 }
 </script>
 
@@ -238,5 +226,7 @@ function goToPrevChapter() {
 .next-btn:hover {
   background: #e65500;
 }
+
+
 </style>
 

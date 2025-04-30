@@ -19,7 +19,11 @@ const routes = [
   { path: '/login', component: Login },
   { path: '/register', component: Register },
   { path: '/library', component: Library, name:"Library" },
-  { path: '/novel/:id/content/:chapterId', component: NovelContent, name:"NovelContent" },
+  { 
+    path: '/novel/:novelId/chapters/:chapterId/content', 
+    name: 'NovelContent', 
+    component: NovelContent 
+  },
   { path: "/my-center", name: "MyCenter", component: MyCenter },
   { path: "/author-dashboard", name: "AuthorDashboard", component: AuthorDashboard },
   {

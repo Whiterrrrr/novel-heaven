@@ -8,11 +8,15 @@
       <div class="grid">
         <!-- 使用 NovelCard 组件来显示每本小说 -->
         <NovelCard
-          v-for="book in currentBatch"
-          :key="book.id"
-          :novel="book" 
-          @click="viewDetails(book)"
-        />
+        v-for="(book, i) in currentBatch"
+        :key="book.id"
+        :novel="{ 
+        ...book, 
+        // 全局序号 = 批次索引 * 每页大小 + 当前 i + 1
+       rank: String(currentIndex * batchSize + i + 1).padStart(2, '0') 
+  }" 
+  @click="viewDetails(book)"/>
+
       </div>
       <!-- 左右切换 -->
       <button class="nav prev" @click="prevBatch">‹</button>
