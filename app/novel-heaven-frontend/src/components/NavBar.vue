@@ -4,24 +4,24 @@
     <div class="nav-left"><span>Novel Heaven</span></div>
 
     <div class="nav-right">
-      <!-- 链接 -->
+      <!-- 导航链接 -->
       <div class="nav-links">
         <router-link to="/" style="font-weight:bold">Home</router-link>
         <router-link to="/library">Library</router-link>
         <a href="#" @click.prevent="handleMyCenter">My Center</a>
       </div>
 
-      <!-- 搜索 -->
+      <!-- 搜索框 -->
       <div class="nav-search">
-        <input v-model="keyword" placeholder="searching novel or author" />
+        <input v-model="q" placeholder="searching novel or author" />
         <button @click="search">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" viewBox="0 0 16 16">
-            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85 1.415-1.414-3.85-3.85zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85-1.415 1.414-3.85-3.85zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
           </svg>
         </button>
       </div>
 
-      <!-- 登录 / 登出 -->
+      <!-- 用户区：未登录 vs 已登录 -->
       <div class="nav-user">
         <!-- 未登录 -->
         <template v-if="!auth.isAuthenticated">
@@ -42,14 +42,15 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useUserStore } from '@/store/user';
+import { useUserStore } from '@/store/index';   // 路径保持与你的 store 文件一致
 
-const router   = useRouter();
-const auth     = useUserStore();
-const keyword  = ref('');
+const router = useRouter();
+const auth   = useUserStore();
+
+const q = ref('');
 
 function search() {
-  if (keyword.value.trim()) router.push(`/search?q=${keyword.value.trim()}`);
+  if (q.value.trim()) router.push(`/search?q=${q.value.trim()}`);
 }
 
 function handleMyCenter() {
@@ -59,7 +60,7 @@ function handleMyCenter() {
 </script>
 
 <style scoped>
-/* 维持原先样式 + 登出按钮 */
+/* 保持原有全部样式，只补一个 logout 按钮样式 */
 .navbar{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:transparent;width:95%;z-index:1000;position:absolute}
 .nav-left{font-size:30px;font-family:"Brush Script MT",cursive}
 .nav-right{display:flex;align-items:center;gap:40px}
