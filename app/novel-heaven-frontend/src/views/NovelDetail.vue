@@ -300,7 +300,6 @@ async function confirmTip() {
 
 
 onMounted(() => {
-  userStore.isAuthenticated = true//模拟已经登录状态
   loadNovelDetail()
   loadChaptersList()
   fetchComments()

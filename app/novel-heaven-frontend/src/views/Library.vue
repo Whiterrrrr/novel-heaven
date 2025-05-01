@@ -62,7 +62,7 @@
   
   async function fetchCategories() {
   try {
-    const { data } = await axios.get('/api/novel/categories/hot', {
+    const { data } = await axios.get('/api/novel/categories', {
       params: { limit: 10 }
     })
     // 假设后端返回 [ { id, name, usage_count }, ... ]
@@ -106,14 +106,12 @@ onMounted(async () => {
 })  
 
 watch(selectedCategory, fetchBooks)
-
   // 先按分类过滤
   const filteredBooks = computed(() =>
   books.value.filter(b => 
     selectedCategory.value === '全部' || b.category === selectedCategory.value
   )
 )
-  
 //只做“最热”排序，其他直接用后端默认时间顺序
 const sortedBooks = computed(() => {
   // 如果选“最热”，按 views*0.7 + likes*0.3 排倒序
