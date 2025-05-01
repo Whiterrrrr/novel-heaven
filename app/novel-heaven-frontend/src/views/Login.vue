@@ -65,7 +65,7 @@ async function handleLogin() {
     /* ➜ 假设后端返回 { token, user:{ id, name, email } } */
     localStorage.setItem("token", data.token);
     axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
-    userStore.login(data.user); // Pinia action: 设置 isAuthenticated & user
+    userStore.login(data.user, data.token);  
 
     router.push("/my-center");
   } catch (err) {
