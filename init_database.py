@@ -185,6 +185,7 @@ def init_interactions():
 
 if __name__ == "__main__":
     with app.app_context():
+        db.drop_all()
         print("=== 开始初始化数据库 ===")
         init_users()
         

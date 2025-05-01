@@ -68,14 +68,17 @@ def get_article_data():
     else:
         return jsonify(chapters)
     
-@articles_bp.route("/<int:novel_id>/chapters/<int:chapter_id>/content")
+@articles_bp.route("/<int:novel_id>/chapters/<int:chapter_id>/content",methods=['GET'])
 #@articles_bp.route("/chapters")
 # @login_required
 def get_chapter_data(novel_id, chapter_id):
+    print(chapter_id)
     data = {'article_id':novel_id}
     manager = ViewManager(data)
     
     chapter_list = manager.get_article_data()
+    if chapter_id > len(chapter_list):
+        return jsonify(msg = 'Non valid chapter_id')
     chapter = chapter_list[chapter_id-1]
     path = chapter.text_path
     

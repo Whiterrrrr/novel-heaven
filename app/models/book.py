@@ -93,7 +93,20 @@ class Article(db.Model):
             'status':self.status
             
         }
-    
+    def to_dict2(self):
+        return {
+            "id": self.id,
+            "article name": self.article_name,
+            "status": self.status,
+            "wordcount": self.word_count,
+            "latest update time":self.latest_update_time,
+            "intro": self.intro,
+            "author":self.author.authorname,
+            "category":self.category.name,
+            #"cover_url": "/path/to/cover.jpg",
+            "views": self.views,
+            "likes": self.likes
+        }
         
 class Chapter(db.Model):
     __tablename__ = 'chapter'

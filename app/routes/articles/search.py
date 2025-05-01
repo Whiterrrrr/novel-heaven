@@ -76,7 +76,8 @@ def search_books(): # 按关键词搜索title包含该词的所有文章（分�
         return jsonify(data)
     
     
-@articles_bp.route("/hot",methods=['GET'])
+#@articles_bp.route("/hot",methods=['GET'])
+@articles_bp.route("/api/novel/categories/hot",methods=['GET'])
 def recommend(): # 简易推荐书目
     data = {}
     manager = SearchManager(data)

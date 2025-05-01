@@ -49,9 +49,10 @@ def category_list(): # 所有类型的所有书籍
     
     
     
-@articles_bp.route('/book_category')
+@articles_bp.route('/')
 def get_books_by_category(): 
-    data = request.get_json()
+    category = request.args.get('category', default=None)
+    data = {'category_name':category}
     manager = CategoryManager(data)
     
     
@@ -64,11 +65,19 @@ def get_books_by_category():
     elif articles == -2:
         return jsonify(msg = 'Error')
     
-    return jsonify([article.to_dict() for article in articles])
+    result = []
+    for article in articles:
+        a = article.to_dict2()
+        article_name = a['article name']
+        article_author = a['author']
+        a['cover_url'] = f'booksample/{article_author}/{article_name}/img.jpg'
+        result.append(a)
+    return jsonify(result)
 
-@articles_bp.route('/book_category/hot_category')
+@articles_bp.route('/categories/hot')
 def get_hot_category_list(): 
-    data = request.get_json()
+    limit = request.args.get('limit', default=10, type=int)
+    data = {'limit':limit}
     manager = CategoryManager(data)
     
     hot_list = manager.get_category_hot_list()
@@ -76,4 +85,4 @@ def get_hot_category_list():
     if hot_list == []:
         return jsonify(msg = 'Error')
     else:
-        return jsonify([category.name for category in hot_list])
+        return jsonify([{'category':category.name,'id':category.id} for category in hot_list])
