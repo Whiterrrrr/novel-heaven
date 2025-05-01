@@ -1,8 +1,10 @@
 <template>
   <div class="chapter-editor-container">
     <div class="editor-card">
-      <!-- Work title & status -->
-      <h1 class="work-title">{{ workInfo.title || "Untitled" }}</h1>
+      <!-- 作品标题 -->
+      <h1 class="work-title">{{ workInfo.title || 'Untitled' }}</h1>
+
+      <!-- 状态下拉框 -->
       <div class="status-section">
         <label>Status:</label>
         <select v-model="workInfo.status" @change="updateWorkStatus">
@@ -12,42 +14,53 @@
       </div>
       <hr />
 
-      <!-- 1. Add Chapters -->
+      <!-- ===== 1. Add / Edit Chapters ===== -->
       <div class="chapter-edit-section">
         <h2>Add Chapters</h2>
-
         <form class="chapter-form" @submit.prevent="publishChapter">
-          <!-- Chapter Title -->
           <label>Chapter Title (≤ 15 chars)</label>
           <input
             v-model="currentChapter.title"
             maxlength="15"
             placeholder="Enter chapter title"
-            class="title-input"
           />
 
-          <!-- Chapter Content -->
           <label>
             Chapter Content
             <span class="count">{{ contentCount }}/{{ maxChars }}</span>
           </label>
           <textarea
             v-model="currentChapter.content"
-            class="content-area"
             :maxlength="maxChars"
             @input="updateCount"
+            rows="12"
+            class="content-area"
           ></textarea>
 
-          <!-- Buttons -->
-          <div class="button-group">
-            <button type="submit" class="primary-btn">Publish Chapter</button>
-            <button type="button" class="secondary-btn" @click="saveDraft">
-              Save Draft
-            </button>
-            <button type="button" class="ai-btn" @click="continueWithAI">
-              AI Continued Writing
-            </button>
-          </div>
+          <!-- 主按钮：Publish -->
+          <button type="submit" class="save-chapter-btn">
+            Publish Chapter
+          </button>
+
+          <!-- 保存草稿 -->
+          <button
+            type="button"
+            class="draft-btn"
+            @click="saveDraft"
+            :disabled="!validChapter"
+          >
+            Save Draft
+          </button>
+
+          <!-- AI 续写 -->
+          <button
+            type="button"
+            class="ai-btn"
+            @click="continueWithAI"
+            :disabled="!currentChapter.content"
+          >
+            AI Continued Writing
+          </button>
 
           <p class="publish-tip">
             Once published, the chapter cannot be edited. Are you sure?
@@ -56,10 +69,12 @@
       </div>
       <hr />
 
-      <!-- 2. Existing Chapters -->
+      <!-- ===== 2. Existing Chapters ===== -->
       <div class="existing-chapters">
         <h2>Existing Chapters</h2>
-        <p v-if="chapters.length === 0" class="empty-text">No chapters yet.</p>
+        <div v-if="chapters.length === 0" class="empty-text">
+          No chapters yet.
+        </div>
         <div class="chapters-scroll" v-else>
           <ul>
             <li v-for="(ch, idx) in chapters" :key="idx">
@@ -71,20 +86,21 @@
       </div>
       <hr />
 
-      <!-- 3. Comments -->
+      <!-- ===== 3. Comments ===== -->
       <div class="comments-area">
         <h2>Comments</h2>
         <div class="comments-scroll">
           <ul>
-            <li v-for="(c, index) in workComments" :key="index">
-              <p><strong>{{ c.user }}:</strong> {{ c.content }}</p>
+            <li v-for="c in workComments" :key="c.id">
+              <p>
+                <strong>{{ c.user }}:</strong> {{ c.content }}
+              </p>
               <small class="comment-date">{{ c.date }}</small>
             </li>
           </ul>
         </div>
       </div>
 
-      <!-- Back -->
       <div class="back-area">
         <router-link to="/author-dashboard" class="back-link">
           Back to Dashboard
@@ -95,205 +111,267 @@
 </template>
 
 <script>
-import axios from "axios";
+import axios from "axios"; // CHANGE
 
 export default {
   name: "ChapterEditor",
+  props: {
+    workId: { type: [String, Number], default: 0 }, // 路由 params 可传
+  },
   data() {
     return {
-      workId: this.$route.params.workId || 0,
       workInfo: { title: "Moonlit Tales", status: "Ongoing" },
       maxChars: 8000,
       contentCount: 0,
-
-      /* demo comments */
       workComments: [
-        { user: "Alice", content: "非常喜欢你的文风！", date: "2025-05-01" },
-        { user: "Bob", content: "期待下一章更新～", date: "2025-05-02" },
+        { id: 1, user: "Alice", content: "Great!", date: "2025-05-01" },
       ],
-
-      /* demo chapters */
-      chapters: [
-        { title: "Prologue", contentSnippet: "In a silent night under the moon..." },
-      ],
-
+      chapters: [],
       currentChapter: { title: "", content: "" },
     };
   },
-
-  methods: {
-    updateWorkStatus() {
-      /* send to backend */
-      axios.put(`/api/author/works/${this.workId}/status`, { status: this.workInfo.status })
-           .catch(() => console.warn("Status update simulated in dev."));
+  computed: {
+    validChapter() {
+      return (
+        this.currentChapter.title.trim() &&
+        this.currentChapter.content.trim()
+      );
     },
-
+  },
+  methods: {
+    /* -------- 字数计数 -------- */
     updateCount() {
       this.contentCount = this.currentChapter.content.length;
     },
 
-    async publishChapter() {
-      if (!this.validateChapter()) return;
-
-      const payload = { ...this.currentChapter };
-      let success = false;
+    /* -------- 更新作品状态 -------- */
+    async updateWorkStatus() {
       try {
-        await axios.post(`/api/author/works/${this.workId}/chapters`, payload);
-        success = true;
+        await axios.put(
+          `/api/author/works/${this.workId || 0}`,
+          {
+            /* CHANGE: 后端要求 update_content 字典 */
+            update_content: { status: this.workInfo.status },
+          },
+          { headers: { Authorization: `Bearer ${localStorage.token}` } }
+        );
+        alert("Status updated!");
       } catch {
-        console.warn("Publish API failed – using local add (dev mode)");
+        alert("Status update failed (offline dev mode).");
       }
-      if (!success && location.hostname !== "localhost") return;
-
-      this.addToLocal("published");
-      alert("Chapter published!");
     },
 
-    async saveDraft() {
-      if (!this.validateChapter()) return;
-
-      const payload = { ...this.currentChapter };
-      let success = false;
-      try {
-        await axios.post(`/api/author/works/${this.workId}/drafts`, payload);
-        success = true;
-      } catch {
-        console.warn("Save draft API failed – using local add (dev mode)");
-      }
-      if (!success && location.hostname !== "localhost") return;
-
-      this.addToLocal("draft");
-      alert("Draft saved!");
-    },
-
-    async continueWithAI() {
-      if (!this.currentChapter.content.trim()) {
-        return alert("Please write some content first.");
+    /* -------- 发布章节 or 草稿工具 -------- */
+    async publishChapter(isDraft = false) {
+      if (!this.validChapter) {
+        alert("Title & content cannot be empty");
+        return;
       }
 
+      const payload = {
+        title: this.currentChapter.title,
+        content: this.currentChapter.content,
+        status: this.workInfo.status, // CHANGE: 按新规范包含 status
+        is_draft: isDraft, // CHANGE
+      };
+
       try {
-        const { data } = await axios.post("/api/llm/continue", {
-          workTitle: this.workInfo.title,
-          chapterTitle: this.currentChapter.title,
-          chapterContent: this.currentChapter.content,
+        await axios.post(
+          `/api/author/works/${this.workId || 0}/chapters`,
+          payload,
+          { headers: { Authorization: `Bearer ${localStorage.token}` } }
+        );
+        alert(isDraft ? "Draft saved!" : "Chapter published!");
+
+        // 前端更新列表
+        const snippet =
+          this.currentChapter.content.slice(0, 40).trim() + "...";
+        this.chapters.push({
+          title: this.currentChapter.title + (isDraft ? " (draft)" : ""),
+          contentSnippet: snippet,
         });
-        this.currentChapter.content += "\n\n" + data.continuedText;
+        this.currentChapter = { title: "", content: "" };
+        this.contentCount = 0;
+      } catch {
+        alert("API failed (offline dev mode).");
+      }
+    },
+
+    /* 保存草稿 */
+    saveDraft() {
+      this.publishChapter(true); // isDraft = true
+    },
+
+    /* -------- AI 续写 -------- */
+    async continueWithAI() {
+      try {
+        const { data } = await axios.post(
+          "/api/author/llm",
+          {
+            workTitle: this.workInfo.title,
+            chapterTitle: this.currentChapter.title,
+            chapterContent: this.currentChapter.content,
+            operation: "expand", // CHANGE: 或 "analyze"
+          },
+          { headers: { Authorization: `Bearer ${localStorage.token}` } }
+        );
+        this.currentChapter.content +=
+          "\n\n" + (data.continuedText || "(AI response…)"); // 追加
         this.updateCount();
       } catch {
-        console.warn("AI API failed – demo text appended.");
-        /* fallback demo text */
-        this.currentChapter.content += "\n\n( AI generated continuation... )";
+        this.currentChapter.content +=
+          "\n\n(AI generated continuation... dev mock)";
         this.updateCount();
       }
-    },
-
-    validateChapter() {
-      if (!this.currentChapter.title || !this.currentChapter.content) {
-        alert("Chapter title and content cannot be empty.");
-        return false;
-      }
-      if (this.currentChapter.title.length > 15) {
-        alert("Chapter title must be 15 characters or fewer!");
-        return false;
-      }
-      return true;
-    },
-
-    addToLocal(tag) {
-      const snippet = this.currentChapter.content.slice(0, 40).trim() + "...";
-      this.chapters.push({
-        title: `${this.currentChapter.title} (${tag})`,
-        contentSnippet: snippet,
-      });
-      this.currentChapter = { title: "", content: "" };
-      this.contentCount = 0;
     },
   },
 };
 </script>
 
 <style scoped>
-/* 宽度 1100px */
+/* —— 之前样式保持，仅少量新按钮样式 —— */
 .chapter-editor-container {
   background: #fffaf0;
   min-height: 100vh;
-  padding: 3rem 2rem;
+  padding: 3.5rem 2rem 2rem;
   display: flex;
   justify-content: center;
   font-family: "Segoe UI", sans-serif;
 }
+
 .editor-card {
   background: #fff;
-  width: 1100px;
-  max-width: 98%;
-  padding: 2.2rem 2.8rem;
-  border-radius: 10px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  width: 820px; /* 放宽可视宽度 */
+  max-width: 95%;
+  padding: 1.5rem 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
-/* 标题与状态 */
-.work-title { font-size: 1.9rem; color: #a8412a; margin: 0 0 .7rem; }
-.status-section { display: flex; gap: .7rem; margin-bottom: 1rem; }
-hr { border: none; border-top: 1px solid #ddd; margin: 1.3rem 0; }
-
-/* 输入美化 */
-.title-input,
-.content-area {
-  width: 100%;
-  padding: .9rem;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  transition: border-color .2s, box-shadow .2s;
+/* ...其余样式保持一致... */
+.work-title {
+  font-size: 1.6rem;
+  color: #a8412a;
+  margin: 0 0 0.4rem;
 }
-.title-input:focus,
-.content-area:focus {
-  outline: none;
-  border-color: #a8412a;
-  box-shadow: 0 0 4px rgba(168, 65, 42, 0.4);
+
+.status-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
-/* Content textarea 更大 */
-.content-area { height: 480px; resize: vertical; overflow: auto; }
 
-/*计数*/
-.count { font-size: .8rem; color: #777; margin-left: .4rem; }
-
-/* 按钮组居中 */
-.button-group { display: flex; justify-content: center; gap: 1.4rem; margin-top: 1.1rem; }
-.primary-btn, .secondary-btn, .ai-btn {
+hr {
   border: none;
-  padding: .9rem 1.8rem;
-  font-size: 1rem;
-  border-radius: 4px;
-  cursor: pointer;
+  border-top: 1px solid #ddd;
+  margin: 1rem 0;
 }
-.primary-btn { background: #f05d37; color: #fff; }
-.primary-btn:hover { background: #d35445; }
-.secondary-btn { background: #666; color: #fff; }
-.secondary-btn:hover { background: #555; }
-.ai-btn { background: #3498db; color: #fff; }
-.ai-btn:hover { background: #2980b9; }
-.publish-tip { font-size: .8rem; color: #a8412a; margin-top: .4rem; }
 
-/* Existing & Comments 区 */
-.chapters-scroll, .comments-scroll {
-  max-height: 240px;
+.chapter-edit-section h2,
+.existing-chapters h2,
+.comments-area h2 {
+  font-size: 1.2rem;
+  color: #a8412a;
+  margin-bottom: 0.5rem;
+}
+
+.chapter-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.chapter-form input,
+.content-area {
+  padding: 0.6rem;
+  font-size: 0.95rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.content-area {
+  height: 320px;
+  resize: vertical;
+  overflow: auto;
+}
+
+.count {
+  font-size: 0.8rem;
+  color: #777;
+  margin-left: 0.4rem;
+}
+
+.save-chapter-btn,
+.draft-btn,
+.ai-btn {
+  background: #f05d37;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 0.4rem;
+}
+
+.draft-btn {
+  background: #999;
+  margin-left: 0;
+}
+
+.ai-btn {
+  background: #4caf50;
+}
+
+.save-chapter-btn:hover {
+  background: #d35445;
+}
+.draft-btn:hover {
+  background: #777;
+}
+.ai-btn:hover {
+  background: #449d48;
+}
+
+.publish-tip {
+  font-size: 0.8rem;
+  color: #a8412a;
+  margin-top: 0.3rem;
+}
+
+.chapters-scroll,
+.comments-scroll {
+  max-height: 200px;
   overflow: auto;
   border: 1px solid #eee;
-  padding: .8rem;
+  padding: 0.6rem;
   border-radius: 4px;
 }
-.chapter-snippet { margin: .2rem 0 0; font-size: .9rem; color: #666; }
 
-.comments-scroll ul { list-style: none; margin: 0; padding: 0; }
-.comments-scroll li { background: #fffcf5; margin: .4rem 0; padding: .5rem; border-radius: 4px; }
-.comment-date { font-size: .8rem; color: #777; }
-
-/* Back */
-.back-area { text-align: right; margin-top: 1.6rem; }
-.back-link {
-  background: #999; color: #fff; text-decoration: none;
-  padding: .6rem 1.2rem; border-radius: 4px; font-size: .9rem;
+/* 省略其他已存在样式 (与前版相同) */
+.chapter-snippet {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+  color: #666;
 }
-.back-link:hover { background: #777; }
+
+.comment-date {
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.back-area {
+  text-align: right;
+  margin-top: 1.5rem;
+}
+.back-link {
+  background: #999;
+  color: #fff;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+.back-link:hover {
+  background: #777;
+}
 </style>
