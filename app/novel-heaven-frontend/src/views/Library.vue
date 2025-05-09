@@ -37,8 +37,8 @@
             <router-link :to="`/novel/${book.id}`" class="title">
             {{ book.title }}
             </router-link>
-            <div class="author">作者：{{ book.author }}</div>
-            <div class="meta">{{ book.status }} · {{ book.wordCount }}万字</div>
+            <div class="author">Author：{{ book.author }}</div>
+            <div class="meta">{{ book.status }} · {{ book.wordCount }}million words</div>
             <div class="desc">{{ book.description }}</div>
             <div class="update">{{ book.updateTime }}</div>
           </div>
@@ -66,7 +66,7 @@
       params: { limit: 10 }
     })
     // 假设后端返回 [ { id, name, usage_count }, ... ]
-    categories.value = ['All', ...data.map(c => c.name)]
+    categories.value = ['All', ...data.map(c => c.category)]
     // 默认选第一个
     selectedCategory.value = categories.value[0]
   } catch (err) {
@@ -127,9 +127,6 @@ const sortedBooks = computed(() => {
   // “最新”——后端已经按时间倒序给过来了
   return filteredBooks.value
 })
-function onSelectCategory(cat) {
-  selectedCategory.value = cat
-}
   </script>
   
   <style scoped>
