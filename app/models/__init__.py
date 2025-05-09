@@ -957,12 +957,12 @@ class DBOperations:
             return []
         
     @staticmethod
-    
     def get_article_chapter_summary(article_id):
         """
         获取指定文章的所有章节摘要（ID 和标题）
         :param article_id: 文章 ID
         :return: 章节摘要列表，格式：[{"id": 1, "title": "第一章"}, ...]
         """
-       
+        chapters = Chapter.query.filter_by(article_id=article_id).order_by(Chapter.id.asc()).all()
+        return [{"id": chapter.id, "title": chapter.chapter_name} for chapter in chapters]
         
