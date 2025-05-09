@@ -17,7 +17,7 @@
               :to="`/novel/${novel.id}/chapters/1/content`"
               class="read-btn"
             >
-              开始阅读
+              Start Reading
             </router-link>
     <div class="action-bar">
     <!-- 点赞 -->
@@ -54,17 +54,17 @@
           
   <div v-if="showTipModal" class="tip-modal-overlay">
     <div class="tip-modal">
-      <h3>投币</h3>
+      <h3>Tipping</h3>
       <input
         type="number"
         v-model.number="tipAmount"
         min="1"
         :max="userBalance"
       />
-      <div class="tip-balance">余额: {{ userBalance }}</div>
+      <div class="tip-balance">Balance: {{ userBalance }}</div>
       <div class="tip-actions">
-        <button class="btn-cancel" @click="cancelTip">取消</button>
-        <button class="btn-confirm" @click="confirmTip">确定</button>
+        <button class="btn-cancel" @click="cancelTip">Cancel</button>
+        <button class="btn-confirm" @click="confirmTip">Confirm</button>
       </div>
     </div>
   </div>    
@@ -76,14 +76,14 @@
     <div class="detail-extra-container">
       <!-- 作品简介 -->
       <section class="intro-section">
-        <h3>作品简介</h3>
+        <h3>Synopsis</h3>
         <hr class="section-divider" />
         <p class="intro-text">{{ novel.description }}</p>
       </section>
 
       <!-- 目录 -->
       <section class="toc-section">
-        <h3>目录</h3>
+        <h3>Table of Contents</h3>
         <hr class="section-divider" />
         <ul class="chapter-list">
        <li v-for="(ch, idx) in chaptersList" :key="idx">
@@ -103,23 +103,23 @@
  <div class="comment-extra">
       <div class="comment-extra-container">
         <div class="comment-header">
-          <span class="comment-count">评论</span>
+          <span class="comment-count">Comment</span>
         </div>
   
         <div class="comment-section">
           <div v-if="!userStore.isAuthenticated" class="login-prompt">
-            <router-link to="/login">请先 登录 后发表评论 (｡･ω･｡)</router-link>
+            <router-link to="/login">Please log in to post a comment (｡･ω･｡)</router-link>
           </div>
           <div v-else class="comment-form">
             <textarea
               ref="commentTextarea"
               v-model="newComment"
-              placeholder="写下你的评论..."
+              placeholder="Write your comment.."
               rows="1"
               @input="autoResize"
             ></textarea>
             <div class="comment-form-actions">
-              <button @click="submitComment">发表评论</button>
+              <button @click="submitComment">Post Comment</button>
             </div>
           </div>
   
@@ -133,7 +133,7 @@
               <div class="comment-content">{{ c.content }}</div>
             </div>
             <div v-if="comments.length === 0" class="no-comments">
-              暂无评论，快来抢沙发！
+              No comments yet. Be the first to comment!
             </div>
           </div>
         </div>
@@ -225,7 +225,7 @@ async function submitComment() {
 
 async function handleLikeClick() {
   if (!userStore.isAuthenticated) {
-    alert('请先登录！')
+    alert('Please log in first!')
     return
   }
   // 计算下一步状态
@@ -246,7 +246,7 @@ async function handleLikeClick() {
 
 async function handleFavoriteClick() {
   if (!userStore.isAuthenticated) {
-    return alert('请先登录！')
+    return alert('Please log in first!')
   }
   const next = !userFavorited.value
   userFavorited.value    = next
@@ -263,7 +263,7 @@ async function handleFavoriteClick() {
 
 function handleCoinClick() {
   if (!userStore.isAuthenticated) {
-    return alert('请先登录！')
+    return alert('Please log in first!')
   }
   showTipModal.value = true
 }
@@ -274,10 +274,10 @@ function cancelTip() {
 
 async function confirmTip() {
   if (tipAmount.value < 1) {
-    return alert('请输入正确的投币数量')
+    return alert('Please enter a valid tip amount')
   }
   if (tipAmount.value > userBalance.value) {
-    return alert('余额不足')
+    return alert('Insufficient balance')
   }
   try {
     const { data } = await axios.post(
@@ -291,7 +291,7 @@ async function confirmTip() {
     showTipModal.value = false
   } catch (err) {
     if (err.response?.status === 400) {
-      alert('余额不足')
+      alert('Insufficient balance')
     } else {
       console.error('投币失败', err)
     }

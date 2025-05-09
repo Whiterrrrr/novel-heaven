@@ -2,7 +2,7 @@
     <div class="library">
       <!-- 分类筛选 -->
       <div class="filter-row">
-        <span class="filter-label">分类：</span>
+        <span class="filter-label">Category：</span>
         <button
           v-for="cat in categories"
           :key="cat"
@@ -51,11 +51,11 @@
   import { ref, computed, onMounted, watch} from 'vue';
   import axios from 'axios';
 
-  const categories       = ref(['全部'])
-  const selectedCategory = ref('全部')
+  const categories       = ref(['All'])
+  const selectedCategory = ref('All')
   
   // 排序选项
-  const sortTabs = ['最热', '最新'];
+  const sortTabs = ['Hot', 'New'];
   const selectedSort = ref(sortTabs[0]);
   
   const books = ref([]);
@@ -66,7 +66,7 @@
       params: { limit: 10 }
     })
     // 假设后端返回 [ { id, name, usage_count }, ... ]
-    categories.value = ['全部', ...data.map(c => c.name)]
+    categories.value = ['All', ...data.map(c => c.name)]
     // 默认选第一个
     selectedCategory.value = categories.value[0]
   } catch (err) {
@@ -76,7 +76,7 @@
 async function fetchBooks() {
   try {
     const params = {}
-    if (selectedCategory.value !== '全部') {
+    if (selectedCategory.value !== 'All') {
       params.category_name = selectedCategory.value
     }
     const { data } = await axios.get('/api/novel', { params })
@@ -109,13 +109,13 @@ watch(selectedCategory, fetchBooks)
   // 先按分类过滤
   const filteredBooks = computed(() =>
   books.value.filter(b => 
-    selectedCategory.value === '全部' || b.category === selectedCategory.value
+    selectedCategory.value === 'All' || b.category === selectedCategory.value
   )
 )
 //只做“最热”排序，其他直接用后端默认时间顺序
 const sortedBooks = computed(() => {
   // 如果选“最热”，按 views*0.7 + likes*0.3 排倒序
-  if (selectedSort.value === '最热') {
+  if (selectedSort.value === 'Hot') {
     return [...filteredBooks.value].sort((a, b) => {
       const scoreA = a.views * 0.7 + a.likes * 0.3
       const scoreB = b.views * 0.7 + b.likes * 0.3

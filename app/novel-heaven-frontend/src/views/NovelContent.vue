@@ -21,14 +21,14 @@
          v-if="!isFirstChapter"
          @click="goToPrevChapter"
          class="prev-btn"
-       >上一章</button>
+       >Last Chapter</button>
 
        <!-- 下一章 -->
        <button
          v-if="!isLastChapter"
          @click="goToNextChapter"
          class="next-btn"
-       >下一章</button>
+       >Next Chapter</button>
      </div>
     </div>
   </div>
