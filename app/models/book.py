@@ -96,12 +96,12 @@ class Article(db.Model):
     def to_dict2(self):
         return {
             "id": self.id,
-            "article name": self.article_name,
+            "article_name": self.article_name,
             "status": self.status,
-            "wordcount": self.word_count,
-            "latest update time":self.latest_update_time,
+            "word_count": self.word_count,
+            "latest_update_time":self.latest_update_time,
             "intro": self.intro,
-            "author":self.author.authorname,
+            "author":self.author.username,
             "category":self.category.name,
             #"cover_url": "/path/to/cover.jpg",
             "views": self.views,

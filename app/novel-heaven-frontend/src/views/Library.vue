@@ -79,7 +79,7 @@ async function fetchBooks() {
     if (selectedCategory.value !== 'All') {
       params.category_name = selectedCategory.value
     }
-    const { data } = await axios.get('/api/novel', { params })
+    const { data } = await axios.get('/api/novel/categories/list', { params })
     // 后端 get_articles_by_category 返回 ORM 对象序列化后的字段：
     // id, article_name, status, word_count, latest_update_time, intro, author, category
     books.value = data.map(item => ({
@@ -92,7 +92,7 @@ async function fetchBooks() {
          ? `/api/novel/cover/${item.cover_url}`
          : '/assets/default-cover.jpg' ,
       description:  item.intro,
-      updateTime:   item.latest_update_time.slice(0, 10),
+      updateTime:   item.latest_update_time,//.slice(0, 10),
       category:     item.category,
       views   :      item.views,
       likes   :      item.likes,

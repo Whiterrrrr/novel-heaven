@@ -16,7 +16,7 @@ const pinia = createPinia();
 app.use(pinia).use(router);        // 注意：此时 **不** mount
 
 /* ========= Axios 基址 & 拦截器 ========= */
-axios.defaults.baseURL = 'https://api.novel-heaven.com';    // 按需修改
+axios.defaults.baseURL = 'http://localhost:5001';    // 按需修改
 
 // 请求拦截器：自动把本地 token 带上
 axios.interceptors.request.use(cfg => {
