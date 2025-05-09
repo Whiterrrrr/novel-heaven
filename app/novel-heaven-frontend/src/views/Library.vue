@@ -88,7 +88,9 @@ async function fetchBooks() {
       author:       item.author,
       status:       item.status,
       wordCount:    (item.word_count / 10000).toFixed(1),
-      cover:        item.cover_url || '/assets/default-cover.jpg',
+      cover:      item.cover_url
+                   ? `/api/novel/${item.cover_url}/cover`
+                   : '/src/assets/covers/book1.jpg',
       description:  item.intro,
       updateTime:   item.latest_update_time.slice(0, 10),
       category:     item.category,
