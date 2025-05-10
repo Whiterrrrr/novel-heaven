@@ -181,7 +181,10 @@ const commentTextarea = ref(null)
 async function loadNovelDetail() {
   try {
     const { data } = await axios.get(`/api/novel/bookview/${novelId}`)
-    novel.value = data
+    data.cover =  data.cover_url
+         ? `/api/novel/cover/${data.cover_url}`
+         : '/assets/default-cover.jpg' ;
+    novel.value = data ;
     // 后端需要返回 likes, likedByMe, favoritesCount, favoritedByMe, tipsCount，tippedByMe
     likesCount.value     = data.likes //文章的点赞数
     userLiked.value      = data.likedByMe //用户是否对这篇文章进行了点赞
