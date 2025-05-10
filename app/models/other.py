@@ -145,7 +145,6 @@ class Like(db.Model):
     )
     
     user = db.relationship('User', back_populates='likes')
-    article = db.relationship('Article', back_populates='likes')
     
     def __repr__(self):
         return f'<Like user={self.user_id} article={self.article_id}>'
