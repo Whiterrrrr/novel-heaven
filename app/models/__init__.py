@@ -987,4 +987,12 @@ class DBOperations:
         """
         chapters = Chapter.query.filter_by(article_id=article_id).order_by(Chapter.id.asc()).all()
         return [{"id": chapter.id, "title": chapter.chapter_name} for chapter in chapters]
+      
+      
+    def get_author_articles(author_id):
+        """
+        返回 author_id名下的自创书籍
+        id、title、cover、intro、status、likes、commentCount
         
+        """
+          

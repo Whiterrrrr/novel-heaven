@@ -24,8 +24,8 @@ class CommentManager():
             
         return DBOperations.delete_comment(comment_id, verify)
                
-    def get_article_comment(self,article_id):
-    
+    def get_article_comment(self):
+        article_id = self.data['article_id']
         page = self.data['page'] if 'page' in self.data.keys() else 1
         per_page = self.data['per_page'] if 'per_page' in self.data.keys() else 20
         include_user_info = self.data['include_user_info'] if 'include_user_info' in self.data.keys() else False
@@ -63,13 +63,10 @@ class CommentManager():
 @articles_bp.route("/<int:article_id>/comments", methods=['POST','GET' ])
 @login_required
 def make_comment(article_id):
-    data = request.get_json()
-    data['user_id'] = current_user.id
-    
-    manager = CommentManager(data)
     if request.method == 'GET':
-
-        results, page_total_num = manager.get_article_comment(article_id)
+        data = {'article_id': article_id}
+        manager = CommentManager(data)
+        results, page_total_num = manager.get_article_comment()
         """
         def build_tree(parent_id=None):
             return [{
@@ -86,8 +83,14 @@ def make_comment(article_id):
             return jsonify(msg = "Error loading comments")
     
     else:
+        if not current_user.is_authenticated:
+            return jsonify({"message": "Unauthorized"}), 401
+        data = request.get_json()
+        data['user_id'] = current_user.id
+        
+        manager = CommentManager(data)
         new_comment = manager.create_comment(article_id)
-
+        print(new_comment)
         if new_comment.article:
             return jsonify({
                 'id': new_comment.user_id,
@@ -151,7 +154,7 @@ def get_recent_comments():
         return jsonify(msg = 'Fail to get recent comments')
 
 @articles_bp.route("/<int:novel_id>/like", methods=['POST'])
-#@login_required
+@login_required
 def handle_like(novel_id):
     data = request.get_json()
     data['article_id'] = novel_id

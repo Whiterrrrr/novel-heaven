@@ -13,22 +13,31 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Carousel from '../components/Carousel.vue';
 import RankingCarousel from '../components/RankingCarousel.vue'
+import axios from 'axios'
 const router = useRouter()
 const books = ref([])
 
 async function fetchHotBooks() {
   try {
     const { data } = await axios.get('/api/novel/hot')
-    books.value = data
+    books.value = data.map(item =>({
+      id: item.id,
+      title: item.title,
+      category: item.category,
+      cover: item.cover_url
+      ? `/api/novel/cover/${item.cover_url}`
+      : '/assets/default-cover.jpg' ,
+    }))
   } catch (error) {
     console.error('获取热门小说失败：', error)
   }
 }
 
-//onMounted(() => {
-//  fetchHotBooks(27)
-//})
+onMounted(() => {
+  fetchHotBooks()
+})
 
+/*
 //假数据，仅用来看排版布局，测试通信函数使用上面那个
 onMounted(async () => {
 
@@ -145,7 +154,7 @@ onMounted(async () => {
     },
   ];
 })
-
+*/
 
 const onViewBook = (book) => {
   // 跳到详情页

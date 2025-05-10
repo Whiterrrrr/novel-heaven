@@ -236,14 +236,11 @@ async function handleLikeClick() {
   console.log('next:', next)
   // 更新 UI
   userLiked.value  = next
-  console.log('前 likesCount:', likesCount.value)
   likesCount.value += next ? 1 : -1
-  console.log('当前 likesCount:', likesCount.value)
   try {
     // 同步给后端，POST /api/novel/:id/like 接收 { like: boolean }
     await axios.post(`/api/novel/${novelId}/like`, { like: next })
   } catch (err) {
-    console.error('同步点赞状态失败：', err)
     // 回滚
     userLiked.value  = !next
     likesCount.value += next ? -1 : +1
@@ -260,6 +257,7 @@ async function handleFavoriteClick() {
 
   try {
     await axios.post(`/api/novel/${novelId}/favorite`, { favorite: next })
+    console.log("favorite", favoritesCount.value)
   } catch (err) {
     console.error('同步收藏状态失败：', err)
     userFavorited.value    = !next

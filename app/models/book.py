@@ -81,7 +81,9 @@ class Article(db.Model):
         return {
             'id': self.id,
             'title': self.article_name,
-            'category': self.category.name
+            'category': self.category.name,
+            "article_name": self.article_name,
+            "author":self.author.username
             #'latest_chapter': self.latest_update_chapter_name,
             #'word_count': self.word_count,
         }

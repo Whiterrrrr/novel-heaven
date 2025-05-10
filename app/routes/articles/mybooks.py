@@ -101,7 +101,9 @@ class BookManager():
 @articles_bp.route("/mybookshelf",methods=['GET'])
 @login_required
 def mybooks_list():
-    data = request.get_json()
+    # data = request.get_json()
+    data={}
+    data['user_id'] = current_user.id
     manager = BookManager(data)
 
     result = manager.get_bookshelf_data()
@@ -119,7 +121,7 @@ def mybooks_list():
 def handle_favorite(novel_id): 
     data = request.get_json()
     data['article_id'] = novel_id
-    #data['user_id'] = current_user.id
+    data['user_id'] = current_user.id
     manager = BookManager(data)
     
     status = manager.handle_favorite()

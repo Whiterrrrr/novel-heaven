@@ -1,13 +1,13 @@
 import logging
-from flask import Flask, current_app, request
+from flask import Flask, current_app, request,g
 from flask_cors import CORS
-
+from app.models.user import User
 from app.models import login_manager
 from datetime import datetime
 
 def create_app():
     app = Flask(__name__)
-    CORS(app)
+    CORS(app,supports_credentials=True)
     print("create_app()")
     app.config.from_object('config.Config')
     app.secret_key = '1155191482'
@@ -21,6 +21,20 @@ def create_app():
         [Request Path]    {request.path}
         [Request Body]    {request.get_data().decode('utf-8')}
         """)
+    """
+    @app.before_request
+    def load_logged_in_user():
+        token = request.headers.get('Authorization')
+        if token:
+            token = token.replace('Bearer ', '')
+            user = User.query.filter_by(token=token).first()
+            if user:
+                g.current_user = user
+            else:
+                g.current_user = None
+        else:
+            g.current_user = None
+     """
         
     from app.models import db
     db.init_app(app)

@@ -7,6 +7,7 @@ import { createPinia }  from 'pinia';
 import './assets/styles.css';
 
 import axios            from 'axios';
+axios.defaults.withCredentials = true;
 import { useUserStore } from '@/store/index';
 import MockAdapter      from 'axios-mock-adapter';   // 保留——如果你后面有 mock 逻辑会用到
 

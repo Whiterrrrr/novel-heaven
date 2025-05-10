@@ -43,8 +43,8 @@ def get_article_stat(novel_id):
     article_name= stat['title']
     author = stat['author']
     
-    img_path = 'book_smaple/'+stat['author']+'/'+stat['title']+'/img.jpg'
-    stat['cover'] = img_path
+    img_path = stat['author']+'/'+stat['title']+'/img.jpg'
+    stat['cover_url'] = img_path
     if not stat:
         return jsonify(msg = 'No such article'), 404
     elif stat == -1:

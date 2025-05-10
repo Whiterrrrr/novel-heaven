@@ -35,15 +35,16 @@
             >下一页</button>
           </div>
             <div v-for="novel in searchResults" :key="novel.id" class="book-card">
-              <img :src="novel.cover" class="cover" />
+              
+              <img :src="novel.cover_url ? `/api/novel/cover/${novel.cover_url}` : '/assets/default-cover.jpg'" class="cover" />
               <div class="info">
-                <div class="title">{{ novel.title }}</div>
-                <div class="author">作者：{{ novel.author }}</div>
-                <div class="meta">{{ novel.status }} · {{ novel.wordCount }}万字</div>
-                <div class="desc">{{ novel.description }}</div>
-                <div class="update">最近更新：{{ novel.updateTime }}</div>
+                <div class="title">{{ novel.article_name }}</div>
+                <div class="author">Author:{{ novel.author }}</div>
+                <div class="meta">{{ novel.status }} · {{ novel.word_count/10000 }}million words</div>
+                <div class="desc">{{ novel.intro.slice(0, 20) }}{{ novel.intro.length > 20 ? '...' : '' }}</div>
+                <div class="update">Latest Update: {{ novel.latest_update_time }}</div>
                 <router-link
-                  :to="`/novel/${novel.id}/content/1`"
+                  :to="`/novel/${novel.id}`"
                   class="read-now"
                 >立即阅读</router-link>
               </div>
