@@ -442,11 +442,11 @@ class DBOperations:
                 'author':article.author.username,
                 'category':article.category.name,
                 'updateTime':article.latest_update_chapter_name,
-                'description':article.intro
+                'description':article.intro,
                 #'views': article.views,
-                #'likes': article.likes,
+                'likes': article.likes,
                 #'comments': Comment.query.filter_by(article_id=article_id).count(),
-                #'bookmarks': BookShelf.query.filter_by(article_id=article_id).count()
+                'favoritesCount': BookShelf.query.filter_by(article_id=article_id).count()
             }
         except SQLAlchemyError:
             return None
@@ -674,6 +674,28 @@ class DBOperations:
                 return False, 0
             
             article.likes += 1
+            db.session.commit()
+            return True, article.likes
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False, 0
+    
+    @staticmethod
+    def delete_like(article_id):
+        """
+        文章点赞
+        :param article_id: 文章ID
+        :return: (success: bool, likes: int)
+        """
+        try:
+            article = Article.query.get(article_id)
+            if not article:
+                return False, 0
+            
+            if article.likes > 0:
+                article.likes -= 1
+            else:
+                article.likes = 0
             db.session.commit()
             return True, article.likes
         except SQLAlchemyError:

@@ -11,21 +11,21 @@ app = create_app()
 
 def init_test_categories():
     return [
-        {"id": 1, "name": "玄幻奇幻"},
-        {"id": 2, "name": "都市生活"}, 
-        {"id": 3, "name": "科幻未来"}, 
-        {"id": 4, "name": "武侠仙侠"},
-        {"id": 5, "name": "悬疑惊悚-犯罪心理"},
-        {"id": 6, "name": "历史军事"},
-        {"id": 7, "name": "游戏竞技"}, 
-        {"id": 8, "name": "二次元"},
-        {"id": 9, "name": "西方奇幻"},
-        {"id": 10, "name": "无限流"},
-        {"id": 11, "name": "系统快穿"}, 
-        {"id": 12, "name": "古言宅斗"}, 
-        {"id": 13, "name": "星际机甲"}, 
-        {"id": 14, "name": "克苏鲁"}, 
-        {"id": 15, "name": "其他"}  
+        {"id": 1, "name": "Fantasy"},
+        {"id": 2, "name": "Urban"}, 
+        {"id": 3, "name": "SciFi"}, 
+        {"id": 4, "name": "Wuxia"},
+        {"id": 5, "name": "Thriller"},
+        {"id": 6, "name": "Historical"},
+        {"id": 7, "name": "Gaming"}, 
+        {"id": 8, "name": "ACGN"},
+        {"id": 9, "name": "WesternFantasy"},
+        {"id": 10, "name": "Infinite"},
+        {"id": 11, "name": "SystemTravel"}, 
+        {"id": 12, "name": "AncientRomance"}, 
+        {"id": 13, "name": "Mecha"}, 
+        {"id": 14, "name": "Cthulhu"}, 
+        {"id": 15, "name": "Others"}  
     ]
 
 def init_users():

@@ -49,20 +49,22 @@ class CommentManager():
         
         return DBOperations.get_recent_comments(hours, limit),hours,limit
     
-    def like_article(self):
+    def handle_article(self):
         try:
+            status = self.data['like']
             article_id = self.data['article_id']
         except:
             return None
         
-        return DBOperations.make_like(article_id)
+        
+        return DBOperations.make_like(article_id) if status else DBOperations.delete_like(article_id)
         
         
 @articles_bp.route("/<int:article_id>/comments", methods=['POST','GET' ])
 @login_required
 def make_comment(article_id):
     data = request.get_json()
-    #data['user_id'] = current_user.id
+    data['user_id'] = current_user.id
     
     manager = CommentManager(data)
     if request.method == 'GET':
@@ -148,13 +150,12 @@ def get_recent_comments():
     else:
         return jsonify(msg = 'Fail to get recent comments')
 
-@articles_bp.route("/comment/like", methods=['POST'])
-@login_required
-def make_like():
-
+@articles_bp.route("/<int:novel_id>/like", methods=['POST'])
+#@login_required
+def handle_like(novel_id):
     data = request.get_json()
+    data['article_id'] = novel_id
     manager = CommentManager(data)
-    
     
     """
     if data.get('action') == 'like':
@@ -162,10 +163,10 @@ def make_like():
     elif data.get('action') == 'unlike':
         article.likes = max(0, article.likes - 1)
     """
-    total_likes = manager.like_article() 
-    
+    total_likes = manager.handle_article() 
+
     if total_likes != None:
-        return jsonify({'likes': total_likes}), 200
+        return jsonify({'likes': total_likes[1]}), 200
     else:
         return jsonify(msg = 'Fail operation')
 

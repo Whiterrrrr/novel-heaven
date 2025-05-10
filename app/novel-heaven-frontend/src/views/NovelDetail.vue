@@ -233,9 +233,12 @@ async function handleLikeClick() {
   }
   // 计算下一步状态
   const next = !userLiked.value
+  console.log('next:', next)
   // 更新 UI
   userLiked.value  = next
+  console.log('前 likesCount:', likesCount.value)
   likesCount.value += next ? 1 : -1
+  console.log('当前 likesCount:', likesCount.value)
   try {
     // 同步给后端，POST /api/novel/:id/like 接收 { like: boolean }
     await axios.post(`/api/novel/${novelId}/like`, { like: next })

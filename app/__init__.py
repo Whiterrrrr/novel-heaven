@@ -1,5 +1,5 @@
 import logging
-from flask import Flask, current_app
+from flask import Flask, current_app, request
 from flask_cors import CORS
 
 from app.models import login_manager
@@ -12,6 +12,16 @@ def create_app():
     app.config.from_object('config.Config')
     app.secret_key = '1155191482'
     
+    @app.before_request
+    def log_request_info():
+        # 记录请求头、方法、路径等核心信息
+        print(f"""
+        [Request Headers] {request.headers}
+        [Request Method]  {request.method}
+        [Request Path]    {request.path}
+        [Request Body]    {request.get_data().decode('utf-8')}
+        """)
+        
     from app.models import db
     db.init_app(app)
     login_manager.init_app(app)
