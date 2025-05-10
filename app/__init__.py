@@ -12,30 +12,10 @@ def create_app():
     app.config.from_object('config.Config')
     app.secret_key = '1155191482'
     
-    @app.before_request
-    def log_request_info():
-        # 记录请求头、方法、路径等核心信息
-        print(f"""
-        [Request Headers] {request.headers}
-        [Request Method]  {request.method}
-        [Request Path]    {request.path}
-        [Request Body]    {request.get_data().decode('utf-8')}
-        """)
-    """
-    @app.before_request
-    def load_logged_in_user():
-        token = request.headers.get('Authorization')
-        if token:
-            token = token.replace('Bearer ', '')
-            user = User.query.filter_by(token=token).first()
-            if user:
-                g.current_user = user
-            else:
-                g.current_user = None
-        else:
-            g.current_user = None
-     """
-        
+    app.config['UPLOAD_FOLDER'] = 'booksample/'
+    app.config['ALLOWED_EXTENSIONS'] = {'jpg'} 
+    
+    
     from app.models import db
     db.init_app(app)
     login_manager.init_app(app)

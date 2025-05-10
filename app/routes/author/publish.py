@@ -6,6 +6,11 @@ from flask import render_template, request, jsonify
 import datetime
 from abc import ABC, abstractmethod
 import os
+import app
+
+def allowed_file(filename):
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'jpg' 
+    
 class PublishManager(ABC):
     def __init__(self, data):
         self.data = data
@@ -114,22 +119,33 @@ def update_article(article_id):
     })
     
 @author_bp.route("/works", methods=['POST','GET'])
-#@login_required
+@login_required
 def create_new_article():
     if request.method == 'POST':
-        content = request.get_json()
         article_data = {}
         
-        # author_id = content['author_id']
-        article_data['article_name'] = content['title']
-        article_data['intro'] = content['synopsis']
-        article_data['cat_id'] = content['category']
-        #article_data['cover'] = content['cover']
+        article_data['article_name'] = request.form.get('title')
+        article_data['intro'] = request.form.get('synopsis')
+        article_data['cat_id'] = request.form.get('category')
+        file = request.files['cover']
+
+        # 如果文件符合要求，进行保存
+        if file and allowed_file(file.filename):
+            authorname = User.query.get(current_user.id).username
+
+            cover_dir = os.path.join('book_sample', authorname, article_data['article_name'])
+            os.makedirs(cover_dir, exist_ok=True)  
+
+            cover_path = os.path.join(cover_dir, 'img.jpg')
+            file.save(cover_path)
+        
+            article_data['cover'] = cover_path
+            print(article_data['cover'])
         data = {
             'author_id':current_user.id,
-            #'author_id':author_id,
             'article_data':article_data
         }
+            
         
         manager = PublishArticle(data)
         
