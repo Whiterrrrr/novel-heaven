@@ -116,3 +116,44 @@ class Tipping(db.Model):
             'amount': self.amount,
             'time': self.time.isoformat()
         }
+        
+        
+class Like(db.Model):
+    __tablename__ = 'like'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    user_id = db.Column(
+        db.Integer, 
+        db.ForeignKey('user.id'),
+        nullable=False,
+        index=True
+    )
+    article_id = db.Column(
+        db.Integer, 
+        db.ForeignKey('article.id'),
+        nullable=False,
+        index=True
+    )
+    created_at = db.Column(
+        db.DateTime, 
+        default=datetime.utcnow
+    )
+    
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'article_id', name='uq_user_article_like'),
+    )
+    
+    user = db.relationship('User', back_populates='likes')
+    article = db.relationship('Article', back_populates='likes')
+    
+    def __repr__(self):
+        return f'<Like user={self.user_id} article={self.article_id}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'article_id': self.article_id,
+            'created_at': self.created_at.isoformat()
+        }

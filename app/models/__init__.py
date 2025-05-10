@@ -661,24 +661,24 @@ class DBOperations:
             return False
     
     
-    @staticmethod
-    def make_like(article_id):
-        """
-        文章点赞
-        :param article_id: 文章ID
-        :return: (success: bool, likes: int)
-        """
-        try:
-            article = Article.query.get(article_id)
-            if not article:
-                return False, 0
+    # @staticmethod
+    # def make_like(article_id):
+    #     """
+    #     文章点赞
+    #     :param article_id: 文章ID
+    #     :return: (success: bool, likes: int)
+    #     """
+    #     try:
+    #         article = Article.query.get(article_id)
+    #         if not article:
+    #             return False, 0
             
-            article.likes += 1
-            db.session.commit()
-            return True, article.likes
-        except SQLAlchemyError:
-            db.session.rollback()
-            return False, 0
+    #         article.likes += 1
+    #         db.session.commit()
+    #         return True, article.likes
+    #     except SQLAlchemyError:
+    #         db.session.rollback()
+    #         return False, 0
     
     @staticmethod
     def delete_like(article_id):
@@ -993,6 +993,95 @@ class DBOperations:
         """
         返回 author_id名下的自创书籍
         id、title、cover、intro、status、likes、commentCount
-        
         """
-          
+        articles = Article.query.filter_by(author_id=author_id).all()
+        
+        result = []
+        for article in articles:
+            comment_count = Comment.query.filter_by(article_id=article.id).count()
+            
+            article_data = {
+                'id': article.id,
+                'title': article.article_name,
+                'cover': None,
+                'intro': article.intro,
+                'status': article.status,
+                'likes': article.likes,
+                'commentCount': comment_count
+            }
+            result.append(article_data)
+        
+        return result
+    
+    def user_like_article(user_id, article_id):
+        """
+        检查用户是否已经点赞了某篇文章
+        参数:
+            user_id: 用户ID
+            article_id: 文章ID
+        返回:
+            bool: True表示已点赞，False表示未点赞
+        """
+        like = Like.query.filter_by(user_id=user_id, article_id=article_id).first()
+        return like is not None
+    
+    
+    def user_create_like(user_id, article_id):
+        """
+        用户点赞文章
+        参数:
+            user_id: 用户ID
+            article_id: 文章ID
+        返回:
+            result: bool
+        """
+        try:
+            if DBOperations.user_like_article(user_id, article_id):
+                article = Article.query.get(article_id)
+                return False
+            
+            article = Article.query.get(article_id)
+            if not article:
+                return False
+            
+            new_like = Like(user_id=user_id, article_id=article_id)
+            db.session.add(new_like)
+            
+            article.likes += 1
+            
+            db.session.commit()
+            return True
+            
+        except Exception as e:
+            db.session.rollback()
+            return False
+        
+    def user_cancel_like_article(user_id, article_id):
+        """
+        用户取消点赞文章
+        参数:
+            user_id: 用户ID
+            article_id: 文章ID
+        返回:
+            result: bool
+        """
+        try:
+            like = Like.query.filter_by(user_id=user_id, article_id=article_id).first()
+            if not like:
+                article = Article.query.get(article_id)
+                return False
+            
+            article = Article.query.get(article_id)
+            if not article:
+                return False
+            
+            db.session.delete(like)
+            
+            article.likes = max(0, article.likes - 1)
+            
+            db.session.commit()
+            return True
+            
+        except Exception as e:
+            db.session.rollback()
+            return False

@@ -59,6 +59,13 @@ class User(UserMixin, db.Model):
         lazy='dynamic'
     )
 
+    likes = db.relationship(
+        'Like',
+        back_populates='user',
+        lazy='dynamic',
+        cascade='all, delete-orphan'
+    )
+
     def __repr__(self):
         return f'<User {self.username}>'
 
