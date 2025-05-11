@@ -496,7 +496,8 @@ class DBOperations:
         """
         try:
             author = db.session.get(User, author_id)
-            if not author or not author.is_author:
+            print(author)
+            if not author :#or not author.is_author:
                 raise ValueError("无效的作者ID或用户非作者身份")
 
             now = datetime.utcnow()
@@ -1007,7 +1008,7 @@ class DBOperations:
                 'intro': article.intro,
                 'status': article.status,
                 'likes': article.likes,
-                'commentCount': comment_count
+                'commentsCount': comment_count
             }
             result.append(article_data)
         

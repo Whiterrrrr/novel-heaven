@@ -7,6 +7,8 @@ import datetime
 from abc import ABC, abstractmethod
 import os
 import app
+from datetime import datetime
+
 
 def allowed_file(filename):
         return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'jpg' 
@@ -28,6 +30,7 @@ class PublishManager(ABC):
         pass
     
     
+    
 class PublishArticle(PublishManager):
     def __init__(self,data):
         super().__init__(data)
@@ -38,6 +41,7 @@ class PublishArticle(PublishManager):
             article_data = self.data['article_data']
         except:
             return -1
+        print(f'author id is {author_id}')
         return DBOperations.create_article(author_id, article_data)
     
     def update(self):
@@ -64,6 +68,13 @@ class PublishArticle(PublishManager):
         
         return DBOperations.delete_article(article_id)
     
+    def show(self):
+        try:
+            user_id = self.data.get('user_id')
+        except:
+            return -1
+        
+        return DBOperations.get_author_articles(user_id)
     
 class PublishChapter(PublishManager):
     def __init__(self,data):
@@ -126,7 +137,7 @@ def create_new_article():
         
         article_data['article_name'] = request.form.get('title')
         article_data['intro'] = request.form.get('synopsis')
-        article_data['cat_id'] = request.form.get('category')
+        article_data['cat_id'] = 2# request.form.get('category')
         file = request.files['cover']
 
         # 如果文件符合要求，进行保存
@@ -139,8 +150,7 @@ def create_new_article():
             cover_path = os.path.join(cover_dir, 'img.jpg')
             file.save(cover_path)
         
-            article_data['cover'] = cover_path
-            print(article_data['cover'])
+            
         data = {
             'author_id':current_user.id,
             'article_data':article_data
@@ -160,7 +170,18 @@ def create_new_article():
                 "novel_id": new_article.id,
                 "message":"Novel published successfully!"
             })
-    #else:
+    else:
+        
+        #print(current_user.id)
+        data = {'user_id':current_user.id}
+        #data = {'user_id':6}
+        manager = PublishArticle(data)
+        books = manager.show()
+        authorname = User.query.get(current_user.id).username
+        for book in books:
+            book['cover'] = f"{authorname}/{book['title']}/img.jpg"
+        
+        return jsonify(books)
         
 
 @author_bp.route("/delete/article", methods=['POST'])
@@ -180,20 +201,21 @@ def delete_article():
     
     
 @author_bp.route("/works/<int:article_id>/chapters", methods=['POST'])
-#@login_required
+@login_required
 def create_chapter(article_id):
     recv = request.get_json() 
+    print(recv)
     data = {}
     chapter_data = {}
     
     content = recv['content']
+    word_count = len(content)
     user = User.query.filter_by(id=current_user.id).first().username
-    #user = User.query.filter_by(id=1).first().username
     
     article = Article.query.get(article_id)
     if article:
         article_name = article.to_dict()['title'] 
-    text_path = os.path.join('book_library', user, article_name, 'chapter', f"{recv['title']}.txt")
+    text_path = os.path.join('book_sample', user, article_name, 'chapter', f"{recv['title']}.txt")
 
     os.makedirs(os.path.dirname(text_path), exist_ok=True)  
 
@@ -203,15 +225,16 @@ def create_chapter(article_id):
     chapter_data['chapter_name'] = recv['title']
     chapter_data['text_path'] = text_path
     chapter_data['status'] = recv['status']
-    chapter_data['is_draft'] = recv['is_draft']
-    
+    chapter_data['is_draft'] = False #recv['is_draft']
+    print(recv['is_draft'])
+    chapter_data['word_count'] = word_count
     data['chapter_data'] = chapter_data
     data['article_id'] = article_id
     manager = PublishChapter(data)
 
 
     status, new_chapter = manager.create()
-    print(new_chapter)
+    
     if not new_chapter:
         return jsonify(msg = 'Error')
     elif new_chapter == -1:
@@ -282,3 +305,50 @@ def chapter_editor(chapter_id):
         chapter=chapter
     )
     """
+
+@author_bp.route("/me")
+@login_required
+def author_info():
+    user = User.query.get(current_user.id)
+    result = {
+        'authorName':user.username,
+        'coins':user.balance
+    }
+    print(user.username)
+    return jsonify(result)
+
+@author_bp.route("/comments")
+@login_required
+def fetch_comment():
+    limit = request.args.get("limit", 5)
+    user_id = current_user.id
+    
+    books = DBOperations.get_author_articles(user_id)
+    book_id = [book['id'] for book in books]
+    
+    comment = []
+    for id in book_id:
+        comment.append(DBOperations.get_article_comments(id,include_user_info=True)[0])
+        
+    flattened_data = [item for sublist in comment for item in sublist]
+
+    # 按时间降序排序
+    sorted_data = sorted(
+        flattened_data,
+        key=lambda x: datetime.fromisoformat(x['time']),
+        reverse=True
+    )
+
+    data = sorted_data[:limit] if len(sorted_data)>=int(limit) else sorted_data
+    result = []
+    for comment in data:
+        result.append({
+            'content':comment["content"],
+            'date': comment["time"][:10],
+            'reader': comment["user"]["username"]
+        })
+    
+    print(result)
+    return jsonify(result)
+    print(sorted_data)
+    

@@ -10,7 +10,7 @@ from openai import OpenAI
 
 client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
-@author_bp.route("/llm", methods=['GET' ])
+@author_bp.route("/llm", methods=['POST' ])
 #@login_required
 def AI_helper():
     data = request.get_json()
@@ -29,8 +29,8 @@ def AI_helper():
     
     
     prompt_template = {
-        "analyze": "Please analyse the given passage in terms of the type of article, the language of the article and the flow of the article, around 100 words.No need to show the total number of words.\nThe article title is {workTitle} and the current chapter title is {chapterTitle}.\n{text}",
-        "expand": "Please follow the logic of the given article to expand it by 500 words, which should be well-written and logical:\nThe article title is {workTitle} and the current chapter title is {chapterTitle}.\n{text}",
+        "analyze": f"Please analyse the given passage in terms of the type of article, the language of the article and the flow of the article, around 100 words.No need to show the total number of words.\nThe article title is {workTitle} and the current chapter title is {chapterTitle}.\n{text}",
+        "expand": f"Please follow the logic of the given article to expand it by 10 words, which should be well-written and logical:\nThe article title is {workTitle} and the current chapter title is {chapterTitle}.\n{text}.Please give the expansion directly, without chapter title and any introductory sentences, e.g. Certainly! Here's a logical expansion of your chapter, etc.",
         }
 
 
@@ -45,8 +45,8 @@ def AI_helper():
     )
         
         result = response.choices[0].message.content
-        
-        return jsonify({"continueText": result})
+        print(result)
+        return jsonify({"continuedText": result})
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500

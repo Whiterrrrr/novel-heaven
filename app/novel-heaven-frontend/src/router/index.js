@@ -32,9 +32,10 @@ const routes = [
     component: CreateWork,
   },
   {
-    path: "/author-dashboard/chapter-editor",
+    path: "/author-dashboard/chapter-editor/:workId",
     name: "ChapterEditor",
     component: ChapterEditor,
+    props: true
   },
 
 ];

@@ -154,7 +154,7 @@ def init_interactions():
                 chapter_id=3,
                 duration_hours=5.0
             )
-            DBOperations.make_like(article.id)
+            # DBOperations.make_like(article.id)
             DBOperations.add_article_view(article.id)
             DBOperations.add_to_bookshelf(lin.id, article.id)
             DBOperations.add_to_bookshelf(yang.id, article.id)

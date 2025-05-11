@@ -82,53 +82,46 @@ import DaZhuZaiCover from "@/assets/大主宰.jpg";
 import ZheTianCover from "@/assets/遮天.jpg";
 import DouLuoCover from "@/assets/斗罗大陆.jpg";
 import XingChenCover from "@/assets/星辰变.jpg";
+import axios from "axios";
 
 export default {
   name: "MyCenter",
+  created() {
+    this.fetchCenterData();
+  },
   data() {
     return {
-      /* 收藏书籍示例 */
-      favoriteBooks: [
-        { id: 1, title: "斗破苍穹", author: "天蚕土豆", cover: DouPoCover },
-        { id: 2, title: "完美世界", author: "辰东", cover: WanMeiCover },
-        { id: 3, title: "大主宰", author: "天蚕土豆", cover: DaZhuZaiCover },
-        { id: 4, title: "遮天", author: "辰东", cover: ZheTianCover },
-        { id: 5, title: "斗罗大陆", author: "唐家三少", cover: DouLuoCover },
-        { id: 6, title: "星辰变", author: "我吃西红柿", cover: XingChenCover },
-      ],
-
-      /* 打赏记录示例 —— 使用 “I” */
-      rewards: [
-        { date: "2025-04-10", amount: 50, book: "Martial Universe" },
-        { date: "2025-04-12", amount: 20, book: "Martial Universe" },
-        { date: "2025-04-14", amount: 30, book: "Martial Universe" },
-      ],
-
-      /* 评论示例 */
-      messages: [
-        {
-          book: "Wudongqianlun",
-          content: "Update quickly!!",
-          date: "2025-04-11",
-        },
-        {
-          book: "Martial Universe",
-          content: "Love the latest chapter.",
-          date: "2025-04-12",
-        },
-      ],
-
-      /* 剩余 coins（默认 77，可后端覆盖） */
-      remainingCoins: 77,
+      favoriteBooks: [],
+      rewards: [],
+      messages: [],
+      remainingCoins: 0,
     };
   },
   methods: {
+    fetchCenterData() {
+      axios
+        .get("/api/user/center")
+        .then((res) => {
+          const {
+            favoriteBooks = [],
+            rewards = [],
+            messages = [],
+            remainingCoins = 0,
+          } = res.data || {};
+          this.favoriteBooks = favoriteBooks;
+          this.rewards = rewards;
+          this.messages = messages;
+          this.remainingCoins = remainingCoins;
+        })
+        .catch((err) => console.error(err));
+    },
     gotoAuthorDashboard() {
       this.$router.push("/author-dashboard");
     },
   },
 };
 </script>
+
 
 <style scoped>
 /* —— 新增 / 调整 —— */

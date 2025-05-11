@@ -53,11 +53,12 @@ class CommentManager():
         try:
             status = self.data['like']
             article_id = self.data['article_id']
+            user_id = self.data['user_id']
         except:
             return None
         
         
-        return DBOperations.make_like(article_id) if status else DBOperations.delete_like(article_id)
+        return DBOperations.user_create_like(user_id, article_id) if status else DBOperations.user_cancel_like_article(user_id, article_id)
         
         
 @articles_bp.route("/<int:article_id>/comments", methods=['POST','GET' ])
@@ -158,6 +159,7 @@ def get_recent_comments():
 def handle_like(novel_id):
     data = request.get_json()
     data['article_id'] = novel_id
+    data['user_id'] = current_user.id
     manager = CommentManager(data)
     
     """
@@ -169,7 +171,7 @@ def handle_like(novel_id):
     total_likes = manager.handle_article() 
 
     if total_likes != None:
-        return jsonify({'likes': total_likes[1]}), 200
+        return jsonify({'likes': total_likes}), 200
     else:
         return jsonify(msg = 'Fail operation')
 

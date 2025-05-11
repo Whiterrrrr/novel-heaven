@@ -52,10 +52,10 @@ def get_books_by_category():
     category = request.args.get('category', default=None)
     data = {'category_name':category}
     manager = CategoryManager(data)
-    
+    print(data)
     
     articles = manager.get_articles_by_category()
-
+    print(articles)
     if articles == -1:
         return jsonify(msg = 'Non valid input'), 400
     elif articles == []:
@@ -70,6 +70,7 @@ def get_books_by_category():
         article_author = a['author']
         a['cover_url'] = f'{article_author}/{article_name}/img.jpg'
         result.append(a)
+    print(result)
     return jsonify(result)
 
 @articles_bp.route('/categories')

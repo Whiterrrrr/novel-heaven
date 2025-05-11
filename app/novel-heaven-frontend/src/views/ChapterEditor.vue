@@ -38,7 +38,7 @@
           ></textarea>
 
           <!-- 主按钮：Publish -->
-          <button type="submit" class="save-chapter-btn">
+          <button type="submit" class="save-chapter-btn" @click="publishChapter">
             Publish Chapter
           </button>
 
@@ -143,7 +143,7 @@ export default {
     updateCount() {
       this.contentCount = this.currentChapter.content.length;
     },
-
+    
     /* -------- 更新作品状态 -------- */
     async updateWorkStatus() {
       try {
@@ -163,6 +163,7 @@ export default {
 
     /* -------- 发布章节 or 草稿工具 -------- */
     async publishChapter(isDraft = false) {
+      console.log(this.workId)
       if (!this.validChapter) {
         alert("Title & content cannot be empty");
         return;
