@@ -348,7 +348,25 @@ def fetch_comment():
             'reader': comment["user"]["username"]
         })
     
-    print(result)
+    # print(result)
     return jsonify(result)
-    print(sorted_data)
+
+@author_bp.route("/works/overview/<int:article_id>")
+@login_required 
+def show_article(article_id):
+    result = {}
+    origin = DBOperations.get_article_statistics(article_id)
+    chapters = DBOperations.get_article_chapter_summary(article_id)
+    
+    comments, _ = DBOperations.get_article_comments(article_id, include_user_info=True)
+    result['title'] = origin['title']
+    result['status'] = origin['status']
+    result['comments'] = []
+    
+    for comment in comments:
+        result['comments'].append({'user':comment['user']['username'], 'content':comment['content']})
+    
+    result['chapters'] = chapters
+    
+    return jsonify(result)
     

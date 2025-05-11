@@ -445,6 +445,7 @@ class DBOperations:
                 'description':article.intro,
                 #'views': article.views,
                 'likes': article.likes,
+                'status': article.status,
                 #'comments': Comment.query.filter_by(article_id=article_id).count(),
                 'favoritesCount': BookShelf.query.filter_by(article_id=article_id).count()
             }

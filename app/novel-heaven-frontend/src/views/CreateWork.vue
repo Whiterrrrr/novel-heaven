@@ -15,10 +15,20 @@
           required
         />
 
-        <!-- Cover Upload -->
+        <!-- Category -->
+        <label>Category</label>
+        <select v-model="selectedCategory" required>
+          <option value="" disabled>Select category</option>
+          <option
+            v-for="cat in categories"
+            :key="cat.id"
+            :value="cat.id"
+          >{{ cat.name }}</option>
+        </select>
+
+        <!-- Cover (JPG/PNG ≤ 2 MB) -->
         <label>Cover (JPG/PNG ≤ 2 MB)</label>
         <div class="file-wrapper">
-          <!-- 隐藏的真实 input -->
           <input
             ref="coverInput"
             type="file"
@@ -27,14 +37,11 @@
             @change="handleFileChange"
             required
           />
-          <!-- 触发按钮 -->
           <button
             type="button"
             class="file-btn"
             @click="triggerFileSelect"
-          >
-            Choose File
-          </button>
+          >Choose File</button>
           <span class="file-name">{{ fileName }}</span>
         </div>
 
@@ -44,7 +51,7 @@
           <p class="preview-caption">{{ title || "Title preview" }}</p>
         </div>
 
-        <!-- Synopsis -->
+        <!-- Synopsis (≤300 chars) -->
         <label>
           Synopsis (≤300 chars)
           <span class="count">{{ synopsis.length }}/300</span>
@@ -52,8 +59,7 @@
         <textarea
           v-model="synopsis"
           maxlength="300"
-          rows="10"
-          class="synopsis-box"
+          placeholder="Enter synopsis"
           required
         ></textarea>
 
@@ -68,7 +74,7 @@
 
       <!-- Disclaimer -->
       <p class="disclaimer">
-        Once created and published, the work <strong>cannot be modified</strong>.
+        Once created and published, the work title and cover cannot be changed.
       </p>
     </div>
   </div>
@@ -76,6 +82,7 @@
 
 <script>
 import axios from "axios";
+
 export default {
   name: "CreateWork",
   props: { visible: Boolean },
@@ -87,6 +94,24 @@ export default {
       previewUrl: "",
       fileName: "No file chosen",
       errorMessage: "",
+      categories: [
+        { id: 1,  name: "Fantasy"         },
+        { id: 2,  name: "Urban"           },
+        { id: 3,  name: "SciFi"           },
+        { id: 4,  name: "Wuxia"           },
+        { id: 5,  name: "Thriller"        },
+        { id: 6,  name: "Historical"      },
+        { id: 7,  name: "Gaming"          },
+        { id: 8,  name: "ACGN"            },
+        { id: 9,  name: "WesternFantasy"  },
+        { id: 10, name: "Infinite"        },
+        { id: 11, name: "SystemTravel"    },
+        { id: 12, name: "AncientRomance"  },
+        { id: 13, name: "Mecha"           },
+        { id: 14, name: "Cthulhu"         },
+        { id: 15, name: "Others"          },
+      ],
+      selectedCategory: "",
     };
   },
   methods: {
@@ -102,7 +127,6 @@ export default {
       if (file.size > 2 * 1024 * 1024) {
         return this.showErr("Image size must be ≤ 2 MB.");
       }
-
       this.errorMessage = "";
       this.coverFile = file;
       this.previewUrl = URL.createObjectURL(file);
@@ -118,23 +142,31 @@ export default {
       if (!this.coverFile) {
         return this.showErr("Cover image is required.");
       }
+      if (!this.selectedCategory) {
+        return this.showErr("Please select a category.");
+      }
 
       const fd = new FormData();
       fd.append("title", this.title);
       fd.append("synopsis", this.synopsis);
       fd.append("cover", this.coverFile);
+      fd.append("category_id", this.selectedCategory);
 
       try {
-        await axios.post("/api/author/works", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        this.$emit("created");
-        alert("Work published successfully!");
-        this.resetAndClose();
-      } catch (e) {
-        this.showErr(
-          e.response?.data?.message || "Failed to publish work."
+        const { data } = await axios.post(
+          "/api/author/works",
+          fd,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${localStorage.token}`,
+            },
+          }
         );
+        this.resetAndClose();
+        this.$emit("created", data);
+      } catch {
+        this.showErr("Failed to create work. Please try again.");
       }
     },
     showErr(msg) {
@@ -150,6 +182,7 @@ export default {
       this.previewUrl = "";
       this.fileName = "No file chosen";
       this.errorMessage = "";
+      this.selectedCategory = "";
       this.$emit("update:visible", false);
     },
   },
@@ -170,7 +203,7 @@ export default {
 .modal-content {
   background: #fff;
   width: 960px;
-  max-width: 95%;
+  max-width: 700px;
   padding: 2.4rem;
   border-radius: 10px;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
@@ -192,6 +225,8 @@ export default {
   flex-direction: column;
   gap: 1rem;
 }
+
+/* Input & Textarea 基础样式 */
 .create-work-form input,
 .create-work-form textarea {
   padding: 0.7rem;
@@ -207,11 +242,23 @@ export default {
   box-shadow: 0 0 4px rgba(168, 65, 42, 0.4);
 }
 
-/* Synopsis */
-.synopsis-box {
-  height: 320px;
+/* Category 下拉框 全宽 */
+.create-work-form select {
+  width: 100%;
+  padding: 0.7rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  box-sizing: border-box;
+}
+
+/* Synopsis 文本框 特别宽 & 高度放大 */
+.create-work-form textarea {
+  width: 100%;
+  min-height: 300px;
   resize: vertical;
-  overflow: auto;
+  box-sizing: border-box;
 }
 
 /* File upload */

@@ -52,32 +52,17 @@
             <img :src="work.cover" alt="cover" class="work-cover" />
   
             <!-- 左列：点赞 / 评论 / 状态 -->
-            <div class="work-left-stats">
-              <div class="stat-item">
-    <!-- 新五角星图标 -->
-    <span class="favorites-icon">
-      <svg
-        class="icon"
-        viewBox="0 0 1024 1024"
-        width="16"
-        height="16"
-        style="vertical-align: middle; margin-right: 4px;"
-      >
-        <!-- ⭐️ 五角星（金色） -->
-        <path
-          d="M512 64l149 302 333 48-241 235 57 332-298-157-298 157 57-332-241-235 333-48z"
-          fill="#FFD700"
-        />
-      </svg>
-    </span>
-    <span>{{ work.likes }}</span>
-  </div>
-              <div class="stat-item">
-                <span class="comment-icon">🗩</span>
-                <span>{{ work.commentsCount }}</span>
-              </div>
-              <div class="stat-item">Status: {{ work.status }}</div>
-            </div>
+              <div class="work-left-stats">
+      <div class="stat-item">
+        Favorites: {{ work.favorites }}
+      </div>
+      <div class="stat-item">
+        Comments: {{ work.commentsCount }}
+      </div>
+      <div class="stat-item">
+        Status: {{ work.status }}
+      </div>
+    </div>
   
             <!-- 中列：标题 / 简介 -->
             <div class="work-center">
@@ -153,7 +138,6 @@
   
     created() {
       this.initAuthorInfo(); // CHANGE
-      //this.confirmAuthorName();
       this.refreshWorks();
       this.fetchLatestComments(); // CHANGE
     },
@@ -200,7 +184,6 @@
   
       /* ---------- 进入章节编辑 ---------- */
       editChapters(workId) {
-        
         this.$router.push({ name: "ChapterEditor", params: { workId } });
       },
   
@@ -212,23 +195,26 @@
       /* ---------- 刷新作品列表 ---------- */
       async refreshWorks() {
         try {
-          const { data } = await axios.get("/api/author/works");
-          this.works = data.map(item =>({
-            cover: item.cover
-              ? `/api/novel/cover/${item.cover}`
+          const { data } = await axios.get("/api/author/works", {
+            headers: { Authorization: `Bearer ${localStorage.token}` }
+          });
+          this.works = data.map(w => ({
+            ...w,
+            favorites: w.favorites != null ? w.favorites : w.likes || 0,
+            commentsCount: w.commentsCount != null ? w.commentsCount : w.comments || 0,
+            cover: w.cover
+              ? `/api/novel/cover/${w.cover}`
               : '/assets/default-cover.jpg' ,
             
-            id: item.id,
-            title: item.title,
-            synopsis: item.intro,
-            status: item.status,
-            likes: item.likes,
-            commentsCount: item.commentsCount
-
-          }
-          ));
+            id: w.id,
+            title: w.title,
+            synopsis: w.intro,
+            status: w.status,
+            likes: w.likes,
+            
+          }));
         } catch (err) {
-          this.works = [];  // 若接口异常，保持空列表
+          this.works = [];
         }
       },
   
@@ -415,7 +401,6 @@
   }
   
   .comment-icon {
-    color: #e74c3c;
     font-size: 1.1rem;
   }
   
