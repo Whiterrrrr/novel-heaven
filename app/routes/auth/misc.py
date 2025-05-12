@@ -56,7 +56,7 @@ def get_my_center():
         "remainingCoins": user.balance,
     }), 200
 
-@auth_bp.route('/user/favorites/<int:article_id>', methods=['GET'])
+'''@auth_bp.route('/user/favorites/<int:article_id>', methods=['OPTIONS'])
 @login_required
 def check_user_favorites(article_id):
     user = User.query.filter_by(id=current_user.id).first()
@@ -66,13 +66,14 @@ def check_user_favorites(article_id):
     if article_id in bookshelf:
         return jsonify({"msg": "book found"}), 200
     else:
-        return jsonify({"msg": "not found"}), 400
+        return jsonify({"msg": "not found"}), 400'''
 
 @auth_bp.route('/user/favorites/<int:article_id>', methods=['POST'])
 @login_required
 def add_favorite(article_id):
-    _, state = DBOperations.add_to_bookshelf(current_user.id, article_id)
-    if state:
+    print("call add_favorite()")
+    bookshelf, state = DBOperations.add_to_bookshelf(current_user.id, article_id)
+    if bookshelf is not None and state:
         return jsonify({"msg": "favorited"}), 201 # 类似于这种
     else:
         return jsonify({"msg": "unsuccessful"}), 400  # 类似于这种
@@ -81,6 +82,7 @@ def add_favorite(article_id):
 @auth_bp.route('/user/favorites/<int:article_id>', methods=['DELETE'])
 @login_required
 def remove_favorite(article_id):
+    print("call remove_favorite()")
     state = DBOperations.delete_book_from_shelf(current_user.id, article_id)
     if state:
         return jsonify({"msg": "unfavorited"}), 200

@@ -3,6 +3,9 @@ from . import articles_bp
 from app.models import DBOperations
 from flask_login import login_required, current_user
 
+from ... import User
+
+
 class ViewManager():
     def __init__(self, data):
         self.data = data
@@ -50,6 +53,11 @@ def get_article_stat(novel_id):
     stat['cover_url'] = img_path
     stat['likedByMe'] = is_liked
     stat['myBalance'] = myBalance
+    user = User.query.filter_by(id=current_user.id).first()
+    print("call get_user_favorites()")
+    bookshelf = DBOperations.get_bookshelf_data(user.id)
+    bookshelf = [book.article_id for book in bookshelf]
+    stat['favoritedByMe'] = novel_id in bookshelf
     if not stat:
         return jsonify(msg = 'No such article'), 404
     elif stat == -1:

@@ -260,10 +260,10 @@ async function handleFavoriteClick() {
   try {
     if (next) {
       // 发 POST，新增收藏
-      await axios.post(`/user/favorites/${novelId}`)
+      await axios.post(`/api/user/favorites/${novelId}`)
     } else {
       // 发 DELETE，取消收藏
-      await axios.delete(`/user/favorites/${novelId}`)
+      await axios.delete(`/api/user/favorites/${novelId}`)
     }
 
   } catch (err) {
