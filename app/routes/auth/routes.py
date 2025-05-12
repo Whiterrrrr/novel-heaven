@@ -136,8 +136,9 @@ def settings():
     return render_template('auth/settings.html', form=form)
 
 
-@auth_bp.route('/api/user/isloggedin', methods=['GET'])
+@auth_bp.route('/api/author/me', methods=['GET'])
 def is_logged_in():
+    print("call is_logged_in")
     if current_user.is_authenticated:
         user = User.query.filter_by(id=current_user.id)
         return jsonify(msg="logged in", username=user.username), 200

@@ -139,7 +139,7 @@ def process_books():
                     DBOperations.create_chapter(
                         article.id,
                         {
-                            "chapter_name": f"第{idx}章",
+                            "chapter_name": f"chapter{idx}",
                             "text_path": str(ch_file.relative_to(BASE_DIR)),
                             "word_count": len(content),
                             "status": "published"
@@ -150,7 +150,7 @@ def process_books():
 def init_interactions():
     with app.app_context():
         articles = DBOperations.get_latest_articles(limit=100)
-        lin = DBOperations.get_user_by_username("LIN_Dachaun")
+        lin = DBOperations.get_user_by_username("XU_Chenyan")
         yang = DBOperations.get_user_by_username("YANG_Zihao")
 
         # 阅读记录

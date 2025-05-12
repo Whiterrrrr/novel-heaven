@@ -23,6 +23,7 @@ def get_reading_history():
     for record in query:
         book = Article.query.get(record.article_id)
         chapter = Chapter.query.get(record.latest_reading_chapter_id) if record.latest_reading_chapter_id else None
+        print(f"chapter_id:{chapter.id}, chapter_name:{chapter.chapter_name}")
         history_data.append({
             "book_id": book.id,
             "book_title": book.article_name,
