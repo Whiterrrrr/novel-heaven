@@ -73,6 +73,14 @@ class Article(db.Model):
         lazy='dynamic',
         cascade='all, delete-orphan'
     )
+
+    def __init__(self, author_id, create_time, latest_update_time, latest_update_chapter_name, **kwargs):
+        self.author_id=author_id
+        self.create_time=create_time
+        self.latest_update_time=latest_update_time
+        self.latest_update_chapter_name=latest_update_chapter_name
+        super(Article, self).__init__(**kwargs)
+
     
     def __repr__(self):
         return f'<Article {self.article_name}>'
@@ -105,7 +113,6 @@ class Article(db.Model):
             "intro": self.intro,
             "author":self.author.username,
             "category":self.category.name,
-            #"cover_url": "/path/to/cover.jpg",
             "views": self.views,
             "likes": self.likes
         }

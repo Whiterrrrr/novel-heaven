@@ -98,7 +98,7 @@ export default {
     };
   },
   methods: {
-    fetchCenterData() {
+    async fetchCenterData() {
       axios
         .get("/api/user/center")
         .then((res) => {

@@ -9,4 +9,4 @@ author_bp = Blueprint(
 )
 
 # 导入路由定义（必须放在最后避免循环引用）
-from . import publish,aiAssist
+from . import publish# ,aiAssist

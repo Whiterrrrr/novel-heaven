@@ -68,6 +68,13 @@ def init_users():
                 "password": "xu_password",
                 "is_author": True,
                 "gender": "M"
+            },
+            {
+                "username": "yzh",
+                "email": "yzh@example.com",
+                "password": "11111aaaaa",
+                "is_author": True,
+                "gender": "M"
             }
         ]
 
@@ -106,7 +113,7 @@ def process_books():
                 meta_file = book_dir / "article_info.json"
                 with open(meta_file, "r", encoding="utf-8") as f:
                     book_data = json.load(f)
-
+                print(book_dir / "img.jpg")
                 article = DBOperations.create_article(
                     author_user.id,
                     {

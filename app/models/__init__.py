@@ -432,7 +432,7 @@ class DBOperations:
     @staticmethod
     def get_article_statistics(article_id):
         try:
-            article = Article.query.get(article_id)
+            article: Article = Article.query.get(article_id)
             if not article:
                 return None
                 
@@ -500,14 +500,14 @@ class DBOperations:
             print(author)
             if not author :#or not author.is_author:
                 raise ValueError("无效的作者ID或用户非作者身份")
-
+            print("call create_article")
             now = datetime.utcnow()
             article = Article(
                 author_id=author_id,
-                **article_data,
                 create_time=now,
                 latest_update_time=now,
-                latest_update_chapter_name="未发布章节"
+                latest_update_chapter_name="未发布章节",
+                **article_data
             )
             db.session.add(article)
             db.session.flush()  # 获取article.id
