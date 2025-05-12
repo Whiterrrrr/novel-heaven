@@ -183,5 +183,8 @@ tmp/
 .pytest_cache/
 
 # test author
-book_sample/dev/
-/book_sample/LIN_Dachaun/
+book_sample/*
+# 但保留 这三个
+!book_sample/QI_Haomin/
+!book_sample/XU_Chenyan/
+book_sample/ZHENG_Kexin/
