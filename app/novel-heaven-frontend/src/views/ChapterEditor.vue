@@ -268,22 +268,26 @@ export default {
       }
     },
 
-    /* —— AI 续写 —— */
-    async continueWithAI() {
-      try {
-        const { data } = await axios.post(
-          "/api/author/llm",
-          { content: this.currentChapter.content },
-          { headers: { Authorization: `Bearer ${localStorage.token}` } }
-        );
-        this.currentChapter.content += "\n\n" + data.continuation;
-        this.updateCount();
-      } catch {
-        this.currentChapter.content +=
-          "\n\n(AI generated continuation... mock)";
-        this.updateCount();
-      }
-    },
+    /* -------- AI 续写 -------- */
+async continueWithAI() {
+  try {
+    const { data } = await axios.post(
+      "/api/author/llm",
+      {
+        chapterContent: this.currentChapter.content,
+        workTitle: this.workInfo.title,
+        chapterTitle: this.currentChapter.title
+      },
+      { headers: { Authorization: `Bearer ${localStorage.token}` } }
+    );
+    this.currentChapter.content += "\n\n" + data.continuation;
+    this.updateCount();
+  } catch {
+    this.currentChapter.content +=
+      "\n\n(AI generated continuation... dev mock)";
+    this.updateCount();
+  }
+},
 
     /* —— 打开修改模态框 —— */
     openModifyModal(ch) {
