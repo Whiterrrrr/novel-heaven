@@ -110,7 +110,7 @@ class DBOperations:
             if not user.check_password(password):
                 return False, None, "密码错误"
             
-            user.last_seen = datetime.utcnow()
+            # user.last_seen = datetime.utcnow()
             db.session.commit()
             session['user_id'] = user.id
             login_user(user, remember=remember)
@@ -127,9 +127,12 @@ class DBOperations:
         :return: (reward_given: bool, amount: int)
         """
         try:
-            if False and user.last_seen.date() == date.today():
+            print("call check_and_reward_daily_login")
+            print(user.last_seen.date(), date.today())
+            if user.last_seen.date() == date.today():
                 return False, 0
-            
+            user.last_seen = datetime.utcnow()
+            print("get reward")
             reward = 10
             if user.balance == None:
                 user.balance = 0
@@ -173,7 +176,7 @@ class DBOperations:
             email=email,
             gender=gender,
             joined_at=datetime.utcnow(),
-            last_seen=datetime.utcnow(),
+            last_seen=datetime.utcnow() - timedelta(days=2),
             is_author=is_author
         )
         new_user.set_password(password)

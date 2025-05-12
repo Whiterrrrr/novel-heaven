@@ -72,6 +72,7 @@ class Comment(db.Model):
         return {
             'id': self.id,
             'author': self.user.username,
+            'article_id': self.article_id,
             'content': self.context,
             'time': self.time.isoformat()
         }

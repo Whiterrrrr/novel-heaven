@@ -86,6 +86,12 @@ def init_users():
                 "gender": "M"
             },
             {
+                "username": "dev",
+                "email": "1@3",
+                "password": "11111aaaaa",
+                "gender": "M"
+            },
+            {
                 "username": "YANG_Zihao",
                 "email": "1155191399@link.cuhk.edu.hk",
                 "password": "yangzihao",

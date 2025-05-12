@@ -8,10 +8,12 @@ from abc import ABC, abstractmethod
 import os
 import app
 from datetime import datetime
-
+from PIL import Image
 
 def allowed_file(filename):
-        return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'jpg' 
+    allowed_type = ['jpg', 'jpeg', 'png']
+    file_type = filename.rsplit('.', 1)[1].lower()
+    return '.' in filename and allowed_type.__contains__(file_type), file_type
     
 class PublishManager(ABC):
     def __init__(self, data):
@@ -128,7 +130,29 @@ def update_article(article_id):
         "published_at": article.latest_update_time.isoformat()
        # "article_url": f"/articles/{article.id}"  # 文章打开详情页的路径
     })
-    
+
+
+def convert_to_jpg(file_stream, output_dir):
+    try:
+        with Image.open(file_stream) as img:
+            # 处理RGBA模式转换(关键步骤)
+            if img.mode in ('RGBA', 'LA'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[-1])
+                img = background  # [7,8](@ref)
+            else:
+                img = img.convert('RGB')  # [6](@ref)
+
+            # 生成唯一文件名
+            filename = f"img.jpg"  # [5](@ref)
+            save_path = os.path.join(output_dir, filename)
+
+            # 保存优化参数
+            img.save(save_path, 'JPEG', quality=85, optimize=True)  # [6,7](@ref)
+            return save_path
+    except Exception as e:
+        raise RuntimeError(f"格式转换失败: {str(e)}")  # [6](@ref)
+
 @author_bp.route("/works", methods=['POST','GET'])
 @login_required
 def create_new_article():
@@ -137,18 +161,20 @@ def create_new_article():
         
         article_data['article_name'] = request.form.get('title')
         article_data['intro'] = request.form.get('synopsis')
-        article_data['cat_id'] = 2# request.form.get('category')
+        # cat_id = Category.query.filter_by(id=request.form.get('category_id'))
+        cat_id = request.form.get('category_id')
+        print(cat_id)
+        article_data['cat_id'] = cat_id
         file = request.files['cover']
-
+        alowed, file_type = allowed_file(file.filename)
         # 如果文件符合要求，进行保存
-        if file and allowed_file(file.filename):
+        if file and alowed:
             authorname = User.query.get(current_user.id).username
 
             cover_dir = os.path.join('book_sample', authorname, article_data['article_name'])
             os.makedirs(cover_dir, exist_ok=True)  
 
-            cover_path = os.path.join(cover_dir, 'img.jpg')
-            file.save(cover_path)
+            cover_path = convert_to_jpg(file.stream, cover_dir)
         
             
         data = {

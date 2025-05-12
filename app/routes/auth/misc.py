@@ -39,23 +39,32 @@ def get_user_coins():
 @auth_bp.route('/user/center', methods=['GET'])
 @login_required
 def get_my_center():
+    print("call get_my_center")
     user = User.query.filter_by(id=current_user.id).first()
     bookshelf = DBOperations.get_bookshelf_data(user.id)
     bookshelf = [DBOperations.get_article_statistics(book.article_id) for book in bookshelf]
     get_cover_pth = lambda book: f"/api/novel/cover/{book['author']}/{book['title']}/img.jpg"
+    get_book_name = lambda id: Article.query.filter_by(id=id).first().article_name
     books = [{"id":book['id'], "cover":get_cover_pth(book), "title":book['title'], "author":book['author']} for book in bookshelf]
     tippings = DBOperations.get_user_tippings(user.id, limit=10)
     tippings = [{"date": tipping['time'],
                  "amount": tipping['amount'],
-                 "book":Article.query.filter_by(id=tipping['article_id']).first().article_name}
+                 "book":get_book_name(tipping['article_id'])}
                 for tipping in tippings]
-    '''r.date }}, I gave {{ r.amount }} coins to "{{ r.book'''
-    print(tippings)
-    print("call get_my_center")
+    comments = DBOperations.get_user_comments(user.id)
+    comments = [{"book":get_book_name(comment["article_id"]),
+                 "content": comment["content"],
+                 "date": comment["time"]} for comment in comments]
+    '''{
+    book: "书籍名称",  // 字符串类型
+    content: "评论内容",  // 字符串类型
+    date: "2025-05-12"  // 字符串或Date类型（需格式化）
+    }'''
+
     return jsonify({
         "favoriteBooks": books,
         "rewards": tippings,
-        "messages": DBOperations.get_user_comments(user.id),
+        "messages": comments,
         "remainingCoins": user.balance,
     }), 200
 '''
