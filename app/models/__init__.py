@@ -1,3 +1,4 @@
+import pytz
 from flask import session
 
 from .base import db
@@ -131,7 +132,7 @@ class DBOperations:
             print(user.last_seen.date(), date.today())
             if user.last_seen.date() == date.today():
                 return False, 0
-            user.last_seen = datetime.utcnow()
+            user.last_seen = datetime.now(pytz.utc)
             print("get reward")
             reward = 10
             if user.balance == None:
@@ -175,8 +176,8 @@ class DBOperations:
             authorname='',
             email=email,
             gender=gender,
-            joined_at=datetime.utcnow(),
-            last_seen=datetime.utcnow() - timedelta(days=2),
+            joined_at=datetime.now(pytz.utc),
+            last_seen=datetime.now(pytz.utc) - timedelta(days=1),
             is_author=is_author
         )
         new_user.set_password(password)
