@@ -16,19 +16,6 @@ def get_user_comments():
     print(result)
     return jsonify({"objects": result}), 200
 
-@auth_bp.route('/user/favorites/<int:article_id>', methods=['GET'])
-@login_required
-def check_user_favorites(article_id):
-    user = User.query.filter_by(id=current_user.id).first()
-    print("call get_user_favorites()")
-    bookshelf = DBOperations.get_bookshelf_data(user.id)
-    bookshelf = [book.article_id for book in bookshelf]
-    if article_id in bookshelf:
-        return jsonify({"msg": "book found"}), 200
-    else:
-        return jsonify({"msg": "not found"}), 400
-
-
 @auth_bp.route('/user/coins', methods=['GET'])
 @login_required
 def get_user_coins():
@@ -68,18 +55,34 @@ def get_my_center():
         "messages": comments,
         "remainingCoins": user.balance,
     }), 200
-'''
-{
-        const
-    {
-        favoriteBooks = [],
-    rewards = [],
-    messages = [],
-    remainingCoins = 0,
-    } = res.data | | {};
-    this.favoriteBooks = favoriteBooks;
-    this.rewards = rewards;
-    this.messages = messages;
-    this.remainingCoins = remainingCoins;
-    }
-'''
+
+@auth_bp.route('/user/favorites/<int:article_id>', methods=['GET'])
+@login_required
+def check_user_favorites(article_id):
+    user = User.query.filter_by(id=current_user.id).first()
+    print("call get_user_favorites()")
+    bookshelf = DBOperations.get_bookshelf_data(user.id)
+    bookshelf = [book.article_id for book in bookshelf]
+    if article_id in bookshelf:
+        return jsonify({"msg": "book found"}), 200
+    else:
+        return jsonify({"msg": "not found"}), 400
+
+@auth_bp.route('/user/favorites/<int:article_id>', methods=['POST'])
+@login_required
+def add_favorite(article_id):
+    _, state = DBOperations.add_to_bookshelf(current_user.id, article_id)
+    if state:
+        return jsonify({"msg": "favorited"}), 201 # 类似于这种
+    else:
+        return jsonify({"msg": "unsuccessful"}), 400  # 类似于这种
+
+
+@auth_bp.route('/user/favorites/<int:article_id>', methods=['DELETE'])
+@login_required
+def remove_favorite(article_id):
+    state = DBOperations.delete_book_from_shelf(current_user.id, article_id)
+    if state:
+        return jsonify({"msg": "unfavorited"}), 200
+    else:
+        return jsonify({"msg": "unsuccessful"}), 400  # 类似于这种
