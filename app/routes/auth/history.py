@@ -36,7 +36,6 @@ def get_reading_history():
         })
 
     return jsonify({
-        "code": 200,
         "data": history_data,
         "pagination": {
             "total": pagination.total,
@@ -44,7 +43,7 @@ def get_reading_history():
             "current_page": page,
             "per_page": per_page
         }
-    })
+    }), 200
 
 @auth_bp.route('/reading_history/<int:record_id>', methods=['DELETE'])
 @login_required

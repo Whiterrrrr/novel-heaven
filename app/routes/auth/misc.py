@@ -22,10 +22,11 @@ def check_user_favorites(article_id):
     user = User.query.filter_by(id=current_user.id).first()
     print("call get_user_favorites()")
     bookshelf = DBOperations.get_bookshelf_data(user.id)
-    bookshelf = [DBOperations.get_article_statistics(book.article_id) for book in bookshelf]
-    for book in bookshelf:
-        if book['id'] == article_id: return jsonify({"msg": "book found"}), 200
-    return jsonify({"msg": "not found"}), 400
+    bookshelf = [book.article_id for book in bookshelf]
+    if article_id in bookshelf:
+        return jsonify({"msg": "book found"}), 200
+    else:
+        return jsonify({"msg": "not found"}), 400
 
 
 @auth_bp.route('/user/coins', methods=['GET'])
