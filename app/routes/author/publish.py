@@ -234,7 +234,10 @@ def create_chapter(article_id):
     data = {}
     chapter_data = {}
     
-    content = recv['content']
+    # content = recv['content']
+    title = recv['title']
+    content = 'Chapter Title: ' +title + '\n\n' + recv['content']
+    
     word_count = len(content)
     user = User.query.filter_by(id=current_user.id).first().username
     
@@ -297,6 +300,7 @@ def update_chapter(article_id, chapter_id):
     
     os.makedirs(os.path.dirname(text_path), exist_ok=True)  
 
+    # content = 'Chapter Title: ' + recv['title'] + '\n\n' + recv['content']
     with open(text_path, 'w', encoding='utf-8') as f:
         f.write(recv['content'])
     
