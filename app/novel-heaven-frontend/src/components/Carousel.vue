@@ -74,7 +74,6 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    max-width: 1600px; 
     max-height: 450px;
     position: absolute;
     left: 0;
