@@ -1,5 +1,5 @@
 from flask import render_template, redirect, url_for, flash, jsonify, request, session
-from flask_login import logout_user, current_user, login_required
+from flask_login import logout_user, current_user, login_required, login_user
 from flask_wtf.csrf import validate_csrf
 from werkzeug.exceptions import BadRequest
 from app import write_log
@@ -17,11 +17,12 @@ def admin_required(fn):
         return fn(*args, **kwargs)
     return decorated_function
 
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
 
-    if current_user.is_authenticated:
-        return jsonify({"message": "Already logged in"}), 400
+    #if current_user.is_authenticated:
+        #return jsonify({"message": "Already logged in"}), 400
     
     form = LoginForm()
     print("call login", form.email.data, form.password.data)
@@ -34,6 +35,7 @@ def login():
         )
         
         if success:
+            login_user(user)
             reward_given, amount = DBOperations.check_and_reward_daily_login(user)
             if reward_given:
                 flash(f'获得每日登录奖励{amount}金币！', 'success')
@@ -53,6 +55,43 @@ def login():
 
     return jsonify({"message": "Invalid email or password"}), 401
 
+
+"""
+import uuid
+
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    if current_user.is_authenticated:
+        return jsonify({"message": "Already logged in"}), 400
+    
+    form = LoginForm()
+    if True or form.validate_on_submit():
+        success, user, message = DBOperations.authenticate_user(
+            email=form.email.data,
+            password=form.password.data,
+        )
+        if success:
+            reward_given, amount = DBOperations.check_and_reward_daily_login(user)
+            if reward_given:
+                flash(f'获得每日登录奖励{amount}金币！', 'success')
+                
+            token = str(uuid.uuid4())
+            user.token = token  # 你需要在 User 表里加一个 token 字段
+            print(user.token)
+            db.session.commit()
+
+            return jsonify({
+                "token": token,
+                "balance": user.balance,
+                "user": {
+                    "id": user.id,
+                    "name": user.username,
+                    "email": user.email
+                }
+            }), 200
+        else:
+            return jsonify({"message": message}), 401
+"""       
 
 
 @auth_bp.route('/logout', methods=['GET', 'POST'])

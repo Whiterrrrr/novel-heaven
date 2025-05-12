@@ -9,4 +9,4 @@ articles_bp = Blueprint(
 )
 
 # 导入路由定义（必须放在最后避免循环引用）
-from . import routes, comment,mybooks,category,bookview,search
+from . import routes, comment,mybooks,category,bookview,search,image

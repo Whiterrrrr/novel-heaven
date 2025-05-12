@@ -1,3 +1,4 @@
+import pytz
 from flask import session
 
 from .base import db
@@ -110,7 +111,7 @@ class DBOperations:
             if not user.check_password(password):
                 return False, None, "密码错误"
             
-            user.last_seen = datetime.utcnow()
+            # user.last_seen = datetime.utcnow()
             db.session.commit()
             session['user_id'] = user.id
             login_user(user, remember=remember)
@@ -127,9 +128,12 @@ class DBOperations:
         :return: (reward_given: bool, amount: int)
         """
         try:
-            if False and user.last_seen.date() == date.today():
+            print("call check_and_reward_daily_login")
+            print(user.last_seen.date(), date.today())
+            if user.last_seen.date() == date.today():
                 return False, 0
-            
+            user.last_seen = datetime.now(pytz.utc)
+            print("get reward")
             reward = 10
             if user.balance == None:
                 user.balance = 0
@@ -172,8 +176,8 @@ class DBOperations:
             authorname='',
             email=email,
             gender=gender,
-            joined_at=datetime.utcnow(),
-            last_seen=datetime.utcnow(),
+            joined_at=datetime.now(pytz.utc),
+            last_seen=datetime.now(pytz.utc) - timedelta(days=1),
             is_author=is_author
         )
         new_user.set_password(password)
@@ -432,7 +436,7 @@ class DBOperations:
     @staticmethod
     def get_article_statistics(article_id):
         try:
-            article = Article.query.get(article_id)
+            article: Article = Article.query.get(article_id)
             if not article:
                 return None
                 
@@ -442,11 +446,13 @@ class DBOperations:
                 'author':article.author.username,
                 'category':article.category.name,
                 'updateTime':article.latest_update_chapter_name,
-                'description':article.intro
+                'description':article.intro,
                 #'views': article.views,
-                #'likes': article.likes,
+                'likes': article.likes,
+                'status': article.status,
                 #'comments': Comment.query.filter_by(article_id=article_id).count(),
-                #'bookmarks': BookShelf.query.filter_by(article_id=article_id).count()
+                'favoritesCount': BookShelf.query.filter_by(article_id=article_id).count(),
+                'tipsCount':sum(tipping.amount for tipping in article.tippings)
             }
         except SQLAlchemyError:
             return None
@@ -496,16 +502,17 @@ class DBOperations:
         """
         try:
             author = db.session.get(User, author_id)
-            if not author or not author.is_author:
+            print(author)
+            if not author :#or not author.is_author:
                 raise ValueError("无效的作者ID或用户非作者身份")
-
+            print("call create_article")
             now = datetime.utcnow()
             article = Article(
                 author_id=author_id,
-                **article_data,
                 create_time=now,
                 latest_update_time=now,
-                latest_update_chapter_name="未发布章节"
+                latest_update_chapter_name="未发布章节",
+                **article_data
             )
             db.session.add(article)
             db.session.flush()  # 获取article.id
@@ -661,8 +668,27 @@ class DBOperations:
             return False
     
     
+    # @staticmethod
+    # def make_like(article_id):
+    #     """
+    #     文章点赞
+    #     :param article_id: 文章ID
+    #     :return: (success: bool, likes: int)
+    #     """
+    #     try:
+    #         article = Article.query.get(article_id)
+    #         if not article:
+    #             return False, 0
+            
+    #         article.likes += 1
+    #         db.session.commit()
+    #         return True, article.likes
+    #     except SQLAlchemyError:
+    #         db.session.rollback()
+    #         return False, 0
+    
     @staticmethod
-    def make_like(article_id):
+    def delete_like(article_id):
         """
         文章点赞
         :param article_id: 文章ID
@@ -673,7 +699,10 @@ class DBOperations:
             if not article:
                 return False, 0
             
-            article.likes += 1
+            if article.likes > 0:
+                article.likes -= 1
+            else:
+                article.likes = 0
             db.session.commit()
             return True, article.likes
         except SQLAlchemyError:
@@ -964,5 +993,106 @@ class DBOperations:
         :return: 章节摘要列表，格式：[{"id": 1, "title": "第一章"}, ...]
         """
         chapters = Chapter.query.filter_by(article_id=article_id).order_by(Chapter.id.asc()).all()
-        return [{"id": chapter.id, "title": chapter.chapter_name} for chapter in chapters]
+        return [{"id": chapter.id, "title": chapter.chapter_name} for chapter in chapters if not chapter.is_draft]
+      
+      
+    def get_author_articles(author_id):
+        """
+        返回 author_id名下的自创书籍
+        id、title、cover、intro、status、likes、commentCount
+        """
+        articles = Article.query.filter_by(author_id=author_id).all()
         
+        result = []
+        for article in articles:
+            comment_count = Comment.query.filter_by(article_id=article.id).count()
+            
+            article_data = {
+                'id': article.id,
+                'title': article.article_name,
+                'cover': None,
+                'intro': article.intro,
+                'status': article.status,
+                'likes': article.likes,
+                'commentsCount': comment_count
+            }
+            result.append(article_data)
+        
+        return result
+    
+    def user_like_article(user_id, article_id):
+        """
+        检查用户是否已经点赞了某篇文章
+        参数:
+            user_id: 用户ID
+            article_id: 文章ID
+        返回:
+            bool: True表示已点赞，False表示未点赞
+        """
+        like = Like.query.filter_by(user_id=user_id, article_id=article_id).first()
+        return like is not None
+    
+    
+    def user_create_like(user_id, article_id):
+        """
+        用户点赞文章
+        参数:
+            user_id: 用户ID
+            article_id: 文章ID
+        返回:
+            result: bool
+        """
+        try:
+            if DBOperations.user_like_article(user_id, article_id):
+                article = Article.query.get(article_id)
+                return False
+            
+            article = Article.query.get(article_id)
+            if not article:
+                return False
+            
+            new_like = Like(user_id=user_id, article_id=article_id)
+            db.session.add(new_like)
+            
+            article.likes += 1
+            
+            db.session.commit()
+            return True
+            
+        except Exception as e:
+            db.session.rollback()
+            return False
+        
+    def user_cancel_like_article(user_id, article_id):
+        """
+        用户取消点赞文章
+        参数:
+            user_id: 用户ID
+            article_id: 文章ID
+        返回:
+            result: bool
+        """
+        try:
+            like = Like.query.filter_by(user_id=user_id, article_id=article_id).first()
+            if not like:
+                article = Article.query.get(article_id)
+                return False
+            
+            article = Article.query.get(article_id)
+            if not article:
+                return False
+            
+            db.session.delete(like)
+            
+            article.likes = max(0, article.likes - 1)
+            
+            db.session.commit()
+            return True
+            
+        except Exception as e:
+            db.session.rollback()
+            return False
+        
+    def get_user_balance(user_id):
+        result = db.session.query(User.balance).filter(User.id == user_id).scalar()
+        return result if result is not None else 0

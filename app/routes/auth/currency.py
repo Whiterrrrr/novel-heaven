@@ -25,11 +25,10 @@ def tip_author(article_id):
     print(article.article_name)
     author = DBOperations.get_user_by_id(article.author_id)
     print(author.username)
-
+    
     # 获取打赏金额
     form = TippingForm()
-    amount = form.amount.data
-    print("request data:", amount)
+    amount = form.tips.data
     if amount is None:
         amount = 1
 

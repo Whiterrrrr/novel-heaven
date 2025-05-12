@@ -149,7 +149,7 @@ class TestDBOperations:
                     "chapter_name": "第三章",
                     "word_count": 5000,
                     "text_path": TXT_FILES[2],
-                    "status": "serialized",
+                    "status": "ongoing",
                     "is_draft": True
                 }
                 success, chapter1 = DBOperations.create_chapter(

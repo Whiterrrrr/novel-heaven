@@ -12,10 +12,8 @@ class CategoryManager():
         limit = self.data['limit'] if 'limit' in self.data.keys() else 20
         offset = self.data['offset'] if 'offset' in self.data.keys() else 0
         
-        if not (category_id or category_name):
-            return -1
-        else:
-            return DBOperations.get_articles_by_category(category_id, category_name,limit, offset)
+        
+        return DBOperations.get_articles_by_category(category_id, category_name,limit, offset)
     
     def get_category_hot_list(self):
         limit = self.data['limit'] if 'limit' in self.data.keys() else 10
@@ -49,15 +47,15 @@ def category_list(): # 所有类型的所有书籍
     
     
     
-@articles_bp.route('/')
+@articles_bp.route('/categories/list')
 def get_books_by_category(): 
     category = request.args.get('category', default=None)
     data = {'category_name':category}
     manager = CategoryManager(data)
-    
+    # print(data)
     
     articles = manager.get_articles_by_category()
-    
+    # print(articles)
     if articles == -1:
         return jsonify(msg = 'Non valid input'), 400
     elif articles == []:
@@ -68,20 +66,23 @@ def get_books_by_category():
     result = []
     for article in articles:
         a = article.to_dict2()
-        article_name = a['article name']
+        article_name = a['article_name']
         article_author = a['author']
-        a['cover_url'] = f'booksample/{article_author}/{article_name}/img.jpg'
+        wordcount = (str(a['word_count']/10000)+' million words') if a['word_count']>10000 else (str(a['word_count'])+' words')
+        a['word_count'] = wordcount
+        a['cover_url'] = f'{article_author}/{article_name}/img.jpg'
         result.append(a)
+    print(result)
     return jsonify(result)
 
-@articles_bp.route('/categories/hot')
+@articles_bp.route('/categories')
 def get_hot_category_list(): 
     limit = request.args.get('limit', default=10, type=int)
     data = {'limit':limit}
+
     manager = CategoryManager(data)
     
     hot_list = manager.get_category_hot_list()
-    
     if hot_list == []:
         return jsonify(msg = 'Error')
     else:

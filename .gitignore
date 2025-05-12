@@ -181,3 +181,6 @@ cython_debug/
 
 tmp/
 .pytest_cache/
+
+# test author
+book_sample/dev/

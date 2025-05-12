@@ -17,7 +17,7 @@
       <!-- ===== 1. Add / Edit Chapters ===== -->
       <div class="chapter-edit-section">
         <h2>Add Chapters</h2>
-        <form class="chapter-form" @submit.prevent="publishChapter">
+        <form class="chapter-form" @submit.prevent="publishChapter()">
           <label>Chapter Title (≤ 15 chars)</label>
           <input
             v-model="currentChapter.title"
@@ -38,7 +38,7 @@
           ></textarea>
 
           <!-- 主按钮：Publish -->
-          <button type="submit" class="save-chapter-btn">
+          <button type="submit" class="save-chapter-btn" :disabled="!validChapter">
             Publish Chapter
           </button>
 
@@ -101,31 +101,27 @@
         </div>
       </div>
 
-      <div class="back-area">
-        <router-link to="/author-dashboard" class="back-link">
-          Back to Dashboard
-        </router-link>
-      </div>
+      <router-link to="/author-dashboard" class="back-link">
+        Back to Dashboard
+      </router-link>
     </div>
   </div>
 </template>
 
 <script>
-import axios from "axios"; // CHANGE
+import axios from "axios";
 
 export default {
   name: "ChapterEditor",
   props: {
-    workId: { type: [String, Number], default: 0 }, // 路由 params 可传
+    workId: { type: [String, Number], default: 0 },
   },
   data() {
     return {
-      workInfo: { title: "Moonlit Tales", status: "Ongoing" },
+      workInfo: { title: "", status: "" },
       maxChars: 8000,
       contentCount: 0,
-      workComments: [
-        { id: 1, user: "Alice", content: "Great!", date: "2025-05-01" },
-      ],
+      workComments: [],
       chapters: [],
       currentChapter: { title: "", content: "" },
     };
@@ -138,7 +134,28 @@ export default {
       );
     },
   },
+  async mounted() {
+    if (this.workId) {
+      this.loadWorkData();
+    }
+  },
   methods: {
+    async loadWorkData() {
+      try {
+        const { data } = await axios.get(
+          `/api/author/works/overview/${this.workId}`,
+          { headers: { Authorization: `Bearer ${localStorage.token}` } }
+        );
+        this.workInfo.title = data.title;
+        this.workInfo.status = data.status;
+        this.chapters = data.chapters || [];
+        this.workComments = data.comments || [];
+      } catch (error) {
+        console.error(error);
+        alert("Failed to load work data.");
+      }
+    },
+
     /* -------- 字数计数 -------- */
     updateCount() {
       this.contentCount = this.currentChapter.content.length;
@@ -148,11 +165,8 @@ export default {
     async updateWorkStatus() {
       try {
         await axios.put(
-          `/api/author/works/${this.workId || 0}`,
-          {
-            /* CHANGE: 后端要求 update_content 字典 */
-            update_content: { status: this.workInfo.status },
-          },
+          `/api/author/works/${this.workId}/status`,
+          { update_content: { status: this.workInfo.status } },
           { headers: { Authorization: `Bearer ${localStorage.token}` } }
         );
         alert("Status updated!");
@@ -171,13 +185,13 @@ export default {
       const payload = {
         title: this.currentChapter.title,
         content: this.currentChapter.content,
-        status: this.workInfo.status, // CHANGE: 按新规范包含 status
-        is_draft: isDraft, // CHANGE
+        status: this.workInfo.status,
+        is_draft: isDraft,
       };
 
       try {
         await axios.post(
-          `/api/author/works/${this.workId || 0}/chapters`,
+          `/api/author/works/${this.workId}/chapters`,
           payload,
           { headers: { Authorization: `Bearer ${localStorage.token}` } }
         );
@@ -199,7 +213,7 @@ export default {
 
     /* 保存草稿 */
     saveDraft() {
-      this.publishChapter(true); // isDraft = true
+      this.publishChapter(true);
     },
 
     /* -------- AI 续写 -------- */
@@ -207,16 +221,10 @@ export default {
       try {
         const { data } = await axios.post(
           "/api/author/llm",
-          {
-            workTitle: this.workInfo.title,
-            chapterTitle: this.currentChapter.title,
-            chapterContent: this.currentChapter.content,
-            operation: "expand", // CHANGE: 或 "analyze"
-          },
+          { content: this.currentChapter.content },
           { headers: { Authorization: `Bearer ${localStorage.token}` } }
         );
-        this.currentChapter.content +=
-          "\n\n" + (data.continuedText || "(AI response…)"); // 追加
+        this.currentChapter.content += "\n\n" + data.continuation;
         this.updateCount();
       } catch {
         this.currentChapter.content +=
@@ -258,59 +266,45 @@ export default {
 .status-section {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
-hr {
-  border: none;
-  border-top: 1px solid #ddd;
-  margin: 1rem 0;
+.status-section label {
+  margin-right: 0.5rem;
 }
 
-.chapter-edit-section h2,
-.existing-chapters h2,
-.comments-area h2 {
-  font-size: 1.2rem;
-  color: #a8412a;
-  margin-bottom: 0.5rem;
+.chapter-edit-section,
+.existing-chapters,
+.comments-area {
+  margin-bottom: 2rem;
 }
 
-.chapter-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+.chapter-form label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-weight: bold;
 }
+
 .chapter-form input,
-.content-area {
-  padding: 0.6rem;
-  font-size: 0.95rem;
+.chapter-form textarea,
+.chapter-form select {
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
   border: 1px solid #ccc;
   border-radius: 4px;
-}
-.content-area {
-  height: 320px;
-  resize: vertical;
-  overflow: auto;
-}
-
-.count {
-  font-size: 0.8rem;
-  color: #777;
-  margin-left: 0.4rem;
 }
 
 .save-chapter-btn,
 .draft-btn,
 .ai-btn {
-  background: #f05d37;
+  background: #e74c3c;
   color: #fff;
   border: none;
+  padding: 0.5rem 1rem;
+  margin-right: 0.5rem;
   border-radius: 4px;
-  padding: 0.6rem 1.1rem;
-  font-size: 0.9rem;
   cursor: pointer;
-  margin-top: 0.4rem;
 }
 
 .draft-btn {
@@ -328,41 +322,41 @@ hr {
 .draft-btn:hover {
   background: #777;
 }
-.ai-btn:hover {
-  background: #449d48;
+
+.content-area {
+  font-family: monospace;
 }
 
-.publish-tip {
-  font-size: 0.8rem;
-  color: #a8412a;
-  margin-top: 0.3rem;
-}
-
-.chapters-scroll,
-.comments-scroll {
-  max-height: 200px;
-  overflow: auto;
-  border: 1px solid #eee;
-  padding: 0.6rem;
-  border-radius: 4px;
-}
-
-/* 省略其他已存在样式 (与前版相同) */
-.chapter-snippet {
-  margin: 0.2rem 0 0;
+.count {
   font-size: 0.9rem;
   color: #666;
 }
 
+.chapter-snippet {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.comments-scroll {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
 .comment-date {
   font-size: 0.8rem;
-  color: #777;
+  color: #999;
+}
+
+.empty-text {
+  font-style: italic;
+  color: #999;
 }
 
 .back-area {
   text-align: right;
   margin-top: 1.5rem;
 }
+
 .back-link {
   background: #999;
   color: #fff;

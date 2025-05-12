@@ -20,7 +20,7 @@ class Article(db.Model):
     
     article_name = db.Column(db.String(200), nullable=False)
     chapter_number = db.Column(db.Integer, default=0)
-    status = db.Column(db.String(50), default='serialized')
+    status = db.Column(db.String(50), default='ongoing')
     
     create_time = db.Column(db.DateTime, default=datetime.utcnow)
     latest_update_time = db.Column(
@@ -73,6 +73,14 @@ class Article(db.Model):
         lazy='dynamic',
         cascade='all, delete-orphan'
     )
+
+    def __init__(self, author_id, create_time, latest_update_time, latest_update_chapter_name, **kwargs):
+        self.author_id=author_id
+        self.create_time=create_time
+        self.latest_update_time=latest_update_time
+        self.latest_update_chapter_name=latest_update_chapter_name
+        super(Article, self).__init__(**kwargs)
+
     
     def __repr__(self):
         return f'<Article {self.article_name}>'
@@ -81,7 +89,9 @@ class Article(db.Model):
         return {
             'id': self.id,
             'title': self.article_name,
-            'category': self.category.name
+            'category': self.category.name,
+            "article_name": self.article_name,
+            "author":self.author.username
             #'latest_chapter': self.latest_update_chapter_name,
             #'word_count': self.word_count,
         }
@@ -96,14 +106,13 @@ class Article(db.Model):
     def to_dict2(self):
         return {
             "id": self.id,
-            "article name": self.article_name,
+            "article_name": self.article_name,
             "status": self.status,
-            "wordcount": self.word_count,
-            "latest update time":self.latest_update_time,
+            "word_count": self.word_count,
+            "latest_update_time":self.latest_update_time,
             "intro": self.intro,
-            "author":self.author.authorname,
+            "author":self.author.username,
             "category":self.category.name,
-            #"cover_url": "/path/to/cover.jpg",
             "views": self.views,
             "likes": self.likes
         }

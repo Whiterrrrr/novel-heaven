@@ -6,6 +6,15 @@ from flask import render_template, request, jsonify
 import datetime
 from abc import ABC, abstractmethod
 import os
+import app
+from datetime import datetime
+from PIL import Image
+
+def allowed_file(filename):
+    allowed_type = ['jpg', 'jpeg', 'png']
+    file_type = filename.rsplit('.', 1)[1].lower()
+    return '.' in filename and allowed_type.__contains__(file_type), file_type
+    
 class PublishManager(ABC):
     def __init__(self, data):
         self.data = data
@@ -23,6 +32,7 @@ class PublishManager(ABC):
         pass
     
     
+    
 class PublishArticle(PublishManager):
     def __init__(self,data):
         super().__init__(data)
@@ -33,6 +43,7 @@ class PublishArticle(PublishManager):
             article_data = self.data['article_data']
         except:
             return -1
+        print(f'author id is {author_id}')
         return DBOperations.create_article(author_id, article_data)
     
     def update(self):
@@ -59,6 +70,13 @@ class PublishArticle(PublishManager):
         
         return DBOperations.delete_article(article_id)
     
+    def show(self):
+        try:
+            user_id = self.data.get('user_id')
+        except:
+            return -1
+        
+        return DBOperations.get_author_articles(user_id)
     
 class PublishChapter(PublishManager):
     def __init__(self,data):
@@ -112,24 +130,58 @@ def update_article(article_id):
         "published_at": article.latest_update_time.isoformat()
        # "article_url": f"/articles/{article.id}"  # 文章打开详情页的路径
     })
-    
+
+
+def convert_to_jpg(file_stream, output_dir):
+    try:
+        with Image.open(file_stream) as img:
+            # 处理RGBA模式转换(关键步骤)
+            if img.mode in ('RGBA', 'LA'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[-1])
+                img = background  # [7,8](@ref)
+            else:
+                img = img.convert('RGB')  # [6](@ref)
+
+            # 生成唯一文件名
+            filename = f"img.jpg"  # [5](@ref)
+            save_path = os.path.join(output_dir, filename)
+
+            # 保存优化参数
+            img.save(save_path, 'JPEG', quality=85, optimize=True)  # [6,7](@ref)
+            return save_path
+    except Exception as e:
+        raise RuntimeError(f"格式转换失败: {str(e)}")  # [6](@ref)
+
 @author_bp.route("/works", methods=['POST','GET'])
-#@login_required
+@login_required
 def create_new_article():
     if request.method == 'POST':
-        content = request.get_json()
         article_data = {}
         
-        # author_id = content['author_id']
-        article_data['article_name'] = content['title']
-        article_data['intro'] = content['synopsis']
-        article_data['cat_id'] = content['category']
-        #article_data['cover'] = content['cover']
+        article_data['article_name'] = request.form.get('title')
+        article_data['intro'] = request.form.get('synopsis')
+        # cat_id = Category.query.filter_by(id=request.form.get('category_id'))
+        cat_id = request.form.get('category_id')
+        print(cat_id)
+        article_data['cat_id'] = cat_id
+        file = request.files['cover']
+        alowed, file_type = allowed_file(file.filename)
+        # 如果文件符合要求，进行保存
+        if file and alowed:
+            authorname = User.query.get(current_user.id).username
+
+            cover_dir = os.path.join('book_sample', authorname, article_data['article_name'])
+            os.makedirs(cover_dir, exist_ok=True)  
+
+            cover_path = convert_to_jpg(file.stream, cover_dir)
+        
+            
         data = {
             'author_id':current_user.id,
-            #'author_id':author_id,
             'article_data':article_data
         }
+            
         
         manager = PublishArticle(data)
         
@@ -144,7 +196,18 @@ def create_new_article():
                 "novel_id": new_article.id,
                 "message":"Novel published successfully!"
             })
-    #else:
+    else:
+        
+        #print(current_user.id)
+        data = {'user_id':current_user.id}
+        #data = {'user_id':6}
+        manager = PublishArticle(data)
+        books = manager.show()
+        authorname = User.query.get(current_user.id).username
+        for book in books:
+            book['cover'] = f"{authorname}/{book['title']}/img.jpg"
+        
+        return jsonify(books)
         
 
 @author_bp.route("/delete/article", methods=['POST'])
@@ -164,20 +227,21 @@ def delete_article():
     
     
 @author_bp.route("/works/<int:article_id>/chapters", methods=['POST'])
-#@login_required
+@login_required
 def create_chapter(article_id):
     recv = request.get_json() 
+    print(recv)
     data = {}
     chapter_data = {}
     
     content = recv['content']
+    word_count = len(content)
     user = User.query.filter_by(id=current_user.id).first().username
-    #user = User.query.filter_by(id=1).first().username
     
     article = Article.query.get(article_id)
     if article:
         article_name = article.to_dict()['title'] 
-    text_path = os.path.join('book_library', user, article_name, 'chapter', f"{recv['title']}.txt")
+    text_path = os.path.join('book_sample', user, article_name, 'chapter', f"{recv['title']}.txt")
 
     os.makedirs(os.path.dirname(text_path), exist_ok=True)  
 
@@ -188,14 +252,15 @@ def create_chapter(article_id):
     chapter_data['text_path'] = text_path
     chapter_data['status'] = recv['status']
     chapter_data['is_draft'] = recv['is_draft']
-    
+    print(recv['is_draft'])
+    chapter_data['word_count'] = word_count
     data['chapter_data'] = chapter_data
     data['article_id'] = article_id
     manager = PublishChapter(data)
 
 
     status, new_chapter = manager.create()
-    print(new_chapter)
+    
     if not new_chapter:
         return jsonify(msg = 'Error')
     elif new_chapter == -1:
@@ -266,3 +331,68 @@ def chapter_editor(chapter_id):
         chapter=chapter
     )
     """
+
+@author_bp.route("/me")
+@login_required
+def author_info():
+    user = User.query.get(current_user.id)
+    result = {
+        'authorName':user.username,
+        'coins':user.balance
+    }
+    print(user.username)
+    return jsonify(result)
+
+@author_bp.route("/comments")
+@login_required
+def fetch_comment():
+    limit = request.args.get("limit", 5)
+    user_id = current_user.id
+    
+    books = DBOperations.get_author_articles(user_id)
+    book_id = [book['id'] for book in books]
+    
+    comment = []
+    for id in book_id:
+        comment.append(DBOperations.get_article_comments(id,include_user_info=True)[0])
+        
+    flattened_data = [item for sublist in comment for item in sublist]
+
+    # 按时间降序排序
+    sorted_data = sorted(
+        flattened_data,
+        key=lambda x: datetime.fromisoformat(x['time']),
+        reverse=True
+    )
+
+    data = sorted_data[:limit] if len(sorted_data)>=int(limit) else sorted_data
+    result = []
+    for comment in data:
+        result.append({
+            'content':comment["content"],
+            'date': comment["time"][:10],
+            'reader': comment["user"]["username"]
+        })
+    
+    # print(result)
+    return jsonify(result)
+
+@author_bp.route("/works/overview/<int:article_id>")
+@login_required 
+def show_article(article_id):
+    result = {}
+    origin = DBOperations.get_article_statistics(article_id)
+    chapters = DBOperations.get_article_chapter_summary(article_id)
+    
+    comments, _ = DBOperations.get_article_comments(article_id, include_user_info=True)
+    result['title'] = origin['title']
+    result['status'] = origin['status']
+    result['comments'] = []
+    
+    for comment in comments:
+        result['comments'].append({'user':comment['user']['username'], 'content':comment['content']})
+    
+    result['chapters'] = chapters
+    
+    return jsonify(result)
+    

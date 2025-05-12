@@ -102,41 +102,49 @@ export default {
     async fetchAll() {
       await Promise.all([
         this.fetchFavorites(),
-        this.fetchRewards(),
-        this.fetchComments(),
-        this.fetchCoins(),
+        //this.fetchRewards(),
+        //this.fetchComments(),
+        //this.fetchCoins(),
       ]);
 
       /* 如果任何一部分仍空，统一落单次 demo */
-      if (!this.favoriteBooks.length && !this.demoUsed) {
-        this.useDemoData();
-      }
+      //if (!this.favoriteBooks.length && !this.demoUsed) {
+        //this.useDemoData();
+      //}
     },
 
     async fetchFavorites() {
       try {
-        const { data } = await axios.get("/api/user/favorites");
+        const { data } = await axios.get("/api/novel/mybookshelf");
         this.favoriteBooks = data;
-      } catch {/* swallow */}
+      } catch {/* swallow */
+        console.error('书架加载失败：', err)
+      }
     },
     async fetchRewards() {
       try {
         const { data } = await axios.get("/api/user/rewards");
         this.rewards = data.records;
         this.coinBalance = data.balance;
-      } catch {/* swallow */}
+      } catch {/* swallow */
+        console.error('rewards失败：', err)
+      }
     },
     async fetchComments() {
       try {
         const { data } = await axios.get("/api/user/comments");
         this.comments = data;
-      } catch {/* swallow */}
+      } catch {/* swallow */
+        console.error('comments error', err)
+      }
     },
     async fetchCoins() {
       try {
         const { data } = await axios.get("/api/user/coins");
         this.coinBalance = data.balance;
-      } catch {/* swallow */}
+      } catch {/* swallow */
+        console.error('coins error', err)
+      }
     },
 
     /* --- demo fallback --- */

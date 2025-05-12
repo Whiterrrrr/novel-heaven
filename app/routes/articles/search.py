@@ -25,7 +25,7 @@ class SearchManager():
             return -1
         
         page = self.data['page'] if 'page' in self.data.keys() else 1
-        page_size = self.data['page_size'] if 'page_size' in self.data.keys() else 10
+        page_size = self.data['page_size'] if 'page_size' in self.data.keys() else 4
         
         return DBOperations.search_books(key_word,page,page_size)
     
@@ -55,7 +55,10 @@ def keytag_list():
 @articles_bp.route("/search")
 def search_books(): # 按关键词搜索title包含该词的所有文章（分页提供）
     keywords = request.args.get("q", "")
-    data ={'key_word':keywords}
+    page = request.args.get("page", "")
+    data ={
+        'key_word':keywords,
+        'page':int(page)}
     manager = SearchManager(data)
     
     book_list, total_num, current_page, total_pages = manager.search_books()
@@ -65,8 +68,15 @@ def search_books(): # 按关键词搜索title包含该词的所有文章（分�
     elif book_list == []:
         return jsonify(msg = "The keyword to be searched was not provided"), 404
     else:
-        items = [article.to_dict1() for article in book_list]
-            
+        items = []
+        for article in book_list:
+            stat = article.to_dict2()
+            img_path = stat['author']+'/'+stat['article_name']+'/img.jpg'
+            stat['cover_url'] = img_path
+            wordcount = (str(stat['word_count']/10000)+' million words') if stat['word_count']>10000 else (str(stat['word_count'])+' words')
+            stat['word_count'] = wordcount
+            # print(wordcount)
+            items.append(stat)
         data = {
             'counts':total_num,
             'page':current_page,
@@ -76,18 +86,23 @@ def search_books(): # 按关键词搜索title包含该词的所有文章（分�
         return jsonify(data)
     
     
-#@articles_bp.route("/hot",methods=['GET'])
-@articles_bp.route("/api/novel/categories/hot",methods=['GET'])
+@articles_bp.route("/hot",methods=['GET'])
+#@articles_bp.route("/api/novel/categories/hot",methods=['GET'])
 def recommend(): # 简易推荐书目
     data = {}
     manager = SearchManager(data)
     
-    recommend_articles = manager.recommend_books(27)
-    
+    recommend_articles = manager.recommend_books(10)
+    # print(recommend_articles)
+    items = []
+    for article in recommend_articles:
+        stat = article.to_dict()
+        img_path = stat['author']+'/'+stat['article_name']+'/img.jpg'
+        stat['cover_url'] = img_path
+        items.append(stat)
     if recommend_articles == []:
         return jsonify(msg = "错误描述"), 404
     else:
-        items = [article.to_dict() for article in recommend_articles]
         return jsonify(items)
     
     

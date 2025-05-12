@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from . import articles_bp
 from app.models import DBOperations
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 class ViewManager():
     def __init__(self, data):
@@ -10,10 +10,13 @@ class ViewManager():
     def show_article_stat(self):
         try:
             article_id = self.data['article_id']
+            user_id = self.data['user_id']
         except :
-            return -1
+            return -1,-1
         
-        return DBOperations.get_article_statistics(article_id)
+        is_liked = DBOperations.user_like_article(user_id, article_id)
+        result = DBOperations.get_article_statistics(article_id)
+        return (is_liked, result)
     
     def show_article_chapter_stat(self):
         try:
@@ -33,18 +36,20 @@ class ViewManager():
        
         
 @articles_bp.route("/bookview/<int:novel_id>")
-# @login_required
+@login_required
 def get_article_stat(novel_id):
-    data = {'article_id':novel_id}
+    data = {'article_id':novel_id,'user_id':current_user.id}
     manager = ViewManager(data)
     
-    stat = manager.show_article_stat()
+    is_liked, stat = manager.show_article_stat()
     
     article_name= stat['title']
     author = stat['author']
-    
-    img_path = 'book_smaple/'+stat['author']+'/'+stat['title']+'/img.jpg'
-    stat['cover'] = img_path
+    myBalance =  DBOperations.get_user_balance(current_user.id)
+    img_path = stat['author']+'/'+stat['title']+'/img.jpg'
+    stat['cover_url'] = img_path
+    stat['likedByMe'] = is_liked
+    stat['myBalance'] = myBalance
     if not stat:
         return jsonify(msg = 'No such article'), 404
     elif stat == -1:

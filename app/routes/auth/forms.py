@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, PasswordField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, PasswordField, IntegerField
 from wtforms.validators import Length, DataRequired, Email, EqualTo, ValidationError, Optional
 from app.models import User
 
@@ -18,7 +18,7 @@ class RenameForm(FlaskForm):
     authorName = StringField('new_name', validators=[])
 
 class TippingForm(FlaskForm):
-    amount = StringField('amount', validators=[])
+    tips = IntegerField('tips', validators=[])
 
 class SettingsForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(1, 64)])

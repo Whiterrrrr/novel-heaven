@@ -61,7 +61,7 @@
         min="1"
         :max="userBalance"
       />
-      <div class="tip-balance">Balance: {{ userBalance }}</div>
+      <div class="tip-balance">My Balance: {{ userBalance }}</div>
       <div class="tip-actions">
         <button class="btn-cancel" @click="cancelTip">Cancel</button>
         <button class="btn-confirm" @click="confirmTip">Confirm</button>
@@ -233,6 +233,7 @@ async function handleLikeClick() {
   }
   // 计算下一步状态
   const next = !userLiked.value
+  console.log('next:', next)
   // 更新 UI
   userLiked.value  = next
   likesCount.value += next ? 1 : -1
@@ -240,7 +241,6 @@ async function handleLikeClick() {
     // 同步给后端，POST /api/novel/:id/like 接收 { like: boolean }
     await axios.post(`/api/novel/${novelId}/like`, { like: next })
   } catch (err) {
-    console.error('同步点赞状态失败：', err)
     // 回滚
     userLiked.value  = !next
     likesCount.value += next ? -1 : +1
@@ -265,6 +265,7 @@ async function handleFavoriteClick() {
       // 发 DELETE，取消收藏
       await axios.delete(`/user/favorites/${novelId}`)
     }
+
   } catch (err) {
     console.error('同步收藏状态失败：', err)
     // 回滚 UI

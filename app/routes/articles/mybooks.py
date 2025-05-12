@@ -101,7 +101,9 @@ class BookManager():
 @articles_bp.route("/mybookshelf",methods=['GET'])
 @login_required
 def mybooks_list():
-    data = request.get_json()
+    # data = request.get_json()
+    data={}
+    data['user_id'] = current_user.id
     manager = BookManager(data)
 
     result = manager.get_bookshelf_data()
@@ -119,7 +121,7 @@ def mybooks_list():
 def handle_favorite(novel_id): 
     data = request.get_json()
     data['article_id'] = novel_id
-    #data['user_id'] = current_user.id
+    data['user_id'] = current_user.id
     manager = BookManager(data)
     
     status = manager.handle_favorite()
@@ -130,42 +132,6 @@ def handle_favorite(novel_id):
         return jsonify(msg='Error')
     else:
         return jsonify(msg = 'Successful')
-    
-"""  
-@articles_bp.route("/<int:novel_id/favorite", methods=['POST'])
-#@login_required
-def add_book_to_shelf(novel_id): 
-    data = request.get_json()
-    #data['user_id'] = current_user.id
-    
-    manager = BookManager(data)
-    
-    book_select = manager.add_to_bookshelf()
-    
-    if not book_select:
-        return jsonify(msg='Target book is not found'), 404
-    elif book_select == -1:
-        return jsonify(msg = 'Non valid')
-    elif book_select == 1:
-        return jsonify(msg='Target book has been in your personal shelf'), 400
-    else:
-        return jsonify(msg = 'Successfully add')
-    
-
-
-@articles_bp.route("/mybookshelf/delete", methods=['DELETE'])
-@login_required
-def delete_book_from_shelf():
-    data = request.get_json()
-    manager = BookManager(data)
-    
-    status = manager.delete_book_from_shelf()
-    
-    if not status:
-        return jsonify(msg = 'Book chosen to delete is not in your personal shelf'), 400
-    else:
-        return jsonify(msg = 'Successfully delete')
-"""
 
 @articles_bp.route("/mybookshelf/last_read")
 @login_required

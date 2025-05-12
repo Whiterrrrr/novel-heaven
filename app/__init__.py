@@ -1,16 +1,20 @@
 import logging
-from flask import Flask, current_app
+from flask import Flask, current_app, request,g
 from flask_cors import CORS
-
+from app.models.user import User
 from app.models import login_manager
 from datetime import datetime
 
 def create_app():
     app = Flask(__name__)
-    CORS(app)
+    CORS(app,supports_credentials=True)
     print("create_app()")
     app.config.from_object('config.Config')
     app.secret_key = '1155191482'
+    
+    app.config['UPLOAD_FOLDER'] = 'booksample/'
+    app.config['ALLOWED_EXTENSIONS'] = {'jpg'} 
+    
     
     from app.models import db
     db.init_app(app)

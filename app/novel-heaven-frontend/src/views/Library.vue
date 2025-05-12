@@ -38,7 +38,7 @@
             {{ book.title }}
             </router-link>
             <div class="author">Author：{{ book.author }}</div>
-            <div class="meta">{{ book.status }} · {{ book.wordCount }}million words</div>
+            <div class="meta">{{ book.status }} · {{ book.wordCount }}</div>
             <div class="desc">{{ book.description }}</div>
             <div class="update">{{ book.updateTime }}</div>
           </div>
@@ -79,7 +79,7 @@ async function fetchBooks() {
     if (selectedCategory.value !== 'All') {
       params.category_name = selectedCategory.value
     }
-    const { data } = await axios.get('/api/novel', { params })
+    const { data } = await axios.get('/api/novel/categories/list', { params })
     // 后端 get_articles_by_category 返回 ORM 对象序列化后的字段：
     // id, article_name, status, word_count, latest_update_time, intro, author, category
     books.value = data.map(item => ({
@@ -87,12 +87,12 @@ async function fetchBooks() {
       title:        item.article_name,
       author:       item.author,
       status:       item.status,
-      wordCount:    (item.word_count / 10000).toFixed(1),
+      wordCount:    (item.word_count),//.toFixed(1),
       cover: item.cover_url
          ? `/api/novel/cover/${item.cover_url}`
          : '/assets/default-cover.jpg' ,
       description:  item.intro,
-      updateTime:   item.latest_update_time.slice(0, 10),
+      updateTime:   item.latest_update_time,//.slice(0, 10),
       category:     item.category,
       views   :      item.views,
       likes   :      item.likes,
