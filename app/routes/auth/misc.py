@@ -16,14 +16,17 @@ def get_user_comments():
     print(result)
     return jsonify({"objects": result}), 200
 
-@auth_bp.route('/user/favorites', methods=['GET'])
+@auth_bp.route('/user/<int:article_id>/favorites', methods=['GET'])
 @login_required
-def get_user_favorites():
+def check_user_favorites(article_id):
     user = User.query.filter_by(id=current_user.id).first()
     print("call get_user_favorites()")
-    result = DBOperations.get_bookshelf_data(user.id)
-    print(result)
-    return jsonify({"objects": result}), 200
+    bookshelf = DBOperations.get_bookshelf_data(user.id)
+    bookshelf = [DBOperations.get_article_statistics(book.article_id) for book in bookshelf]
+    for book in bookshelf:
+        if book['id'] == article_id: return jsonify({"msg": "book found"}), 200
+    return jsonify({"msg": "not found"}), 400
+
 
 @auth_bp.route('/user/coins', methods=['GET'])
 @login_required
