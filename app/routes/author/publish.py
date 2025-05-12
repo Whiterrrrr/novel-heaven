@@ -284,10 +284,14 @@ def update_chapter(article_id, chapter_id):
     update = {}
     update['chapter_name'] = recv['title']
     
-    status = DBOperations.delete_chapter(chapter_id)  
+    # status = DBOperations.delete_chapter(chapter_id)  
         
     authorname = User.query.get(current_user.id).username
     novelname = Article.query.get(article_id).article_name
+    chaptername = Chapter.query.get(chapter_id).chapter_name
+    origin_path = f'book_sample/{authorname}/{novelname}/chapter/{chaptername}.txt'
+    if os.path.exists(origin_path):
+        os.remove(origin_path)
     text_path = f'book_sample/{authorname}/{novelname}/chapter/{recv["title"]}.txt'
     
     os.makedirs(os.path.dirname(text_path), exist_ok=True)  
