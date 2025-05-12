@@ -54,7 +54,6 @@ def get_article_stat(novel_id):
     stat['likedByMe'] = is_liked
     stat['myBalance'] = myBalance
     user = User.query.filter_by(id=current_user.id).first()
-    print("call get_user_favorites()")
     bookshelf = DBOperations.get_bookshelf_data(user.id)
     bookshelf = [book.article_id for book in bookshelf]
     stat['favoritedByMe'] = novel_id in bookshelf

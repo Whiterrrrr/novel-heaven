@@ -56,17 +56,6 @@ def get_my_center():
         "remainingCoins": user.balance,
     }), 200
 
-'''@auth_bp.route('/user/favorites/<int:article_id>', methods=['OPTIONS'])
-@login_required
-def check_user_favorites(article_id):
-    user = User.query.filter_by(id=current_user.id).first()
-    print("call get_user_favorites()")
-    bookshelf = DBOperations.get_bookshelf_data(user.id)
-    bookshelf = [book.article_id for book in bookshelf]
-    if article_id in bookshelf:
-        return jsonify({"msg": "book found"}), 200
-    else:
-        return jsonify({"msg": "not found"}), 400'''
 
 @auth_bp.route('/user/favorites/<int:article_id>', methods=['POST'])
 @login_required
