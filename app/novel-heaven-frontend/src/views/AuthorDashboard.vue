@@ -221,6 +221,10 @@ export default {
               : w.comments != null
               ? w.comments
               : 0,
+          cover: w.cover
+         ? `/api/novel/cover/${w.cover}`
+         : '/assets/default-cover.jpg' ,
+    
         }));
       } catch {
         this.works = [];

@@ -206,7 +206,7 @@ export default {
     async loadWorkData() {
       try {
         const { data } = await axios.get(
-          `/api/author/works/${this.workId}`,
+          `/api/author/works/overview/${this.workId}`,
           { headers: { Authorization: `Bearer ${localStorage.token}` } }
         );
         this.workInfo.title = data.title;
@@ -232,8 +232,8 @@ export default {
     async updateWorkStatus() {
       try {
         await axios.put(
-          `/api/author/works/${this.workId}`,
-          { status: this.workInfo.status },
+          `/api/author/works/${this.workId}/status`,
+          { update_content: { status: this.workInfo.status } },
           { headers: { Authorization: `Bearer ${localStorage.token}` } }
         );
         alert("Status updated!");
