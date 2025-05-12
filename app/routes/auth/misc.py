@@ -16,7 +16,7 @@ def get_user_comments():
     print(result)
     return jsonify({"objects": result}), 200
 
-@auth_bp.route('/user/<int:article_id>/favorites', methods=['GET'])
+@auth_bp.route('/user/favorites/<int:article_id>', methods=['GET'])
 @login_required
 def check_user_favorites(article_id):
     user = User.query.filter_by(id=current_user.id).first()
@@ -44,11 +44,17 @@ def get_my_center():
     bookshelf = [DBOperations.get_article_statistics(book.article_id) for book in bookshelf]
     get_cover_pth = lambda book: f"/api/novel/cover/{book['author']}/{book['title']}/img.jpg"
     books = [{"id":book['id'], "cover":get_cover_pth(book), "title":book['title'], "author":book['author']} for book in bookshelf]
-    print(books)
+    tippings = DBOperations.get_user_tippings(user.id, limit=10)
+    tippings = [{"date": tipping['time'],
+                 "amount": tipping['amount'],
+                 "book":Article.query.filter_by(id=tipping['article_id']).first().article_name}
+                for tipping in tippings]
+    '''r.date }}, I gave {{ r.amount }} coins to "{{ r.book'''
+    print(tippings)
     print("call get_my_center")
     return jsonify({
         "favoriteBooks": books,
-        "rewards": DBOperations.get_user_tippings(user.id, limit=10),
+        "rewards": tippings,
         "messages": DBOperations.get_user_comments(user.id),
         "remainingCoins": user.balance,
     }), 200

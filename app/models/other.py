@@ -113,6 +113,7 @@ class Tipping(db.Model):
         return {
             'id': self.id,
             'user_id': self.user_id,
+            'article_id': self.article_id,
             'amount': self.amount,
             'time': self.time.isoformat()
         }
