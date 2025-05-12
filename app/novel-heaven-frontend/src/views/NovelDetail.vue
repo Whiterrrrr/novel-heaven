@@ -249,20 +249,30 @@ async function handleLikeClick() {
 
 async function handleFavoriteClick() {
   if (!userStore.isAuthenticated) {
-    return alert('Please log in first!')
+    alert('Please log in first!')
+    return
   }
+
   const next = !userFavorited.value
-  userFavorited.value    = next
+  userFavorited.value   = next
   favoritesCount.value += next ? 1 : -1
 
   try {
-    await axios.post(`/api/novel/${novelId}/favorite`, { favorite: next })
+    if (next) {
+      // 发 POST，新增收藏
+      await axios.post(`/user/favorites/${novelId}`)
+    } else {
+      // 发 DELETE，取消收藏
+      await axios.delete(`/user/favorites/${novelId}`)
+    }
   } catch (err) {
     console.error('同步收藏状态失败：', err)
-    userFavorited.value    = !next
+    // 回滚 UI
+    userFavorited.value   = !next
     favoritesCount.value += next ? -1 : +1
   }
 }
+
 
 function handleCoinClick() {
   if (!userStore.isAuthenticated) {
