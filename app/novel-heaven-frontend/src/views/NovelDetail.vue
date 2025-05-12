@@ -299,7 +299,7 @@ async function confirmTip() {
       { tips: tipAmount.value }
     )
     // 后端返回最新 tipsCount
-    tipsCount.value   = data.tipsCount
+    tipsCount.value  += tipAmount.value
     userBalance.value = data.myBalance
     showTipModal.value = false
   } catch (err) {
