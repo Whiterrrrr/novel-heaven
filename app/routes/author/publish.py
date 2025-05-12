@@ -251,7 +251,7 @@ def create_chapter(article_id):
     chapter_data['chapter_name'] = recv['title']
     chapter_data['text_path'] = text_path
     chapter_data['status'] = recv['status']
-    chapter_data['is_draft'] = False #recv['is_draft']
+    chapter_data['is_draft'] = recv['is_draft']
     print(recv['is_draft'])
     chapter_data['word_count'] = word_count
     data['chapter_data'] = chapter_data

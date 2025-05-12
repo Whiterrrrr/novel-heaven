@@ -21,7 +21,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     is_author = db.Column(db.Boolean, default=False)
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
-    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    last_seen = db.Column(db.DateTime, default=None)
     balance = db.Column(db.Integer, default=0)
     token = db.Column(db.String(128))
     

@@ -451,7 +451,8 @@ class DBOperations:
                 'likes': article.likes,
                 'status': article.status,
                 #'comments': Comment.query.filter_by(article_id=article_id).count(),
-                'favoritesCount': BookShelf.query.filter_by(article_id=article_id).count()
+                'favoritesCount': BookShelf.query.filter_by(article_id=article_id).count(),
+                'tipsCount':sum(tipping.amount for tipping in article.tippings)
             }
         except SQLAlchemyError:
             return None
@@ -992,7 +993,7 @@ class DBOperations:
         :return: 章节摘要列表，格式：[{"id": 1, "title": "第一章"}, ...]
         """
         chapters = Chapter.query.filter_by(article_id=article_id).order_by(Chapter.id.asc()).all()
-        return [{"id": chapter.id, "title": chapter.chapter_name} for chapter in chapters]
+        return [{"id": chapter.id, "title": chapter.chapter_name} for chapter in chapters if not chapter.is_draft]
       
       
     def get_author_articles(author_id):
@@ -1091,3 +1092,7 @@ class DBOperations:
         except Exception as e:
             db.session.rollback()
             return False
+        
+    def get_user_balance(user_id):
+        result = db.session.query(User.balance).filter(User.id == user_id).scalar()
+        return result if result is not None else 0

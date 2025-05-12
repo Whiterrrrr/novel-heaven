@@ -9,30 +9,30 @@
             @keyup.enter="doSearch"
             placeholder="请输入书名或作者名"
           />
-          <button @click="doSearch">搜索</button>
+          <button @click="doSearch">Search</button>
         </div>
   
         <!-- 只有 hasSearched 为 true 时才显示结果区域 -->
         <div v-if="hasSearched" class="results-container">
           <div class="tabs">
             <button :class="{ active: tab==='related' }" @click="tab='related'">
-              相关
+              Relevant
             </button>
           </div>
   
-          <div class="result-count">共 {{totalCount}} 项相关的结果</div>
+          <div class="result-count">{{totalCount}} relevant novels</div>
   
           <div class="grid">
             <div class="pagination">
           <button
             :disabled="currentPage<=1"
             @click="changePage(currentPage-1)"
-            >上一页</button>
+            >Last Page</button>
           <span>{{ currentPage }} / {{ totalPages }}</span>
           <button
             :disabled="currentPage>=totalPages"
             @click="changePage(currentPage+1)"
-            >下一页</button>
+            >Next Page</button>
           </div>
             <div v-for="novel in searchResults" :key="novel.id" class="book-card">
               
@@ -40,7 +40,7 @@
               <div class="info">
                 <div class="title">{{ novel.article_name }}</div>
                 <div class="author">Author:{{ novel.author }}</div>
-                <div class="meta">{{ novel.status }} · {{ novel.word_count/10000 }}million words</div>
+                <div class="meta">{{ novel.status }} · {{ novel.word_count}}</div>
                 <div class="desc">{{ novel.intro.slice(0, 20) }}{{ novel.intro.length > 20 ? '...' : '' }}</div>
                 <div class="update">Latest Update: {{ novel.latest_update_time }}</div>
                 <router-link

@@ -38,7 +38,7 @@
             {{ book.title }}
             </router-link>
             <div class="author">Author：{{ book.author }}</div>
-            <div class="meta">{{ book.status }} · {{ book.wordCount }}million words</div>
+            <div class="meta">{{ book.status }} · {{ book.wordCount }}</div>
             <div class="desc">{{ book.description }}</div>
             <div class="update">{{ book.updateTime }}</div>
           </div>
@@ -87,7 +87,7 @@ async function fetchBooks() {
       title:        item.article_name,
       author:       item.author,
       status:       item.status,
-      wordCount:    (item.word_count / 10000).toFixed(1),
+      wordCount:    (item.word_count),//.toFixed(1),
       cover: item.cover_url
          ? `/api/novel/cover/${item.cover_url}`
          : '/assets/default-cover.jpg' ,

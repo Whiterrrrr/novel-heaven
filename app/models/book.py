@@ -20,7 +20,7 @@ class Article(db.Model):
     
     article_name = db.Column(db.String(200), nullable=False)
     chapter_number = db.Column(db.Integer, default=0)
-    status = db.Column(db.String(50), default='serialized')
+    status = db.Column(db.String(50), default='ongoing')
     
     create_time = db.Column(db.DateTime, default=datetime.utcnow)
     latest_update_time = db.Column(

@@ -52,10 +52,10 @@ def get_books_by_category():
     category = request.args.get('category', default=None)
     data = {'category_name':category}
     manager = CategoryManager(data)
-    print(data)
+    # print(data)
     
     articles = manager.get_articles_by_category()
-    print(articles)
+    # print(articles)
     if articles == -1:
         return jsonify(msg = 'Non valid input'), 400
     elif articles == []:
@@ -68,6 +68,8 @@ def get_books_by_category():
         a = article.to_dict2()
         article_name = a['article_name']
         article_author = a['author']
+        wordcount = (str(a['word_count']/10000)+' million words') if a['word_count']>10000 else (str(a['word_count'])+' words')
+        a['word_count'] = wordcount
         a['cover_url'] = f'{article_author}/{article_name}/img.jpg'
         result.append(a)
     print(result)
@@ -77,6 +79,7 @@ def get_books_by_category():
 def get_hot_category_list(): 
     limit = request.args.get('limit', default=10, type=int)
     data = {'limit':limit}
+
     manager = CategoryManager(data)
     
     hot_list = manager.get_category_hot_list()

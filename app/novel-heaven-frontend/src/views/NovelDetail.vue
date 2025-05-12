@@ -61,7 +61,7 @@
         min="1"
         :max="userBalance"
       />
-      <div class="tip-balance">Balance: {{ userBalance }}</div>
+      <div class="tip-balance">My Balance: {{ userBalance }}</div>
       <div class="tip-actions">
         <button class="btn-cancel" @click="cancelTip">Cancel</button>
         <button class="btn-confirm" @click="confirmTip">Confirm</button>
