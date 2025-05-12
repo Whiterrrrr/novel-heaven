@@ -63,7 +63,8 @@ class Article(db.Model):
     reading_record = db.relationship(
         'ReadingRecord', 
         back_populates='article',
-        lazy='dynamic'
+        lazy='dynamic',
+        cascade='all, delete-orphan'
     )
     comments = db.relationship(
         'Comment', 
@@ -150,8 +151,7 @@ class Chapter(db.Model):
     )
     reading_record = db.relationship(
         'ReadingRecord',
-        back_populates='chapter',
-        cascade='all, delete-orphan'
+        back_populates='chapter'
     )
     
     def __repr__(self):
