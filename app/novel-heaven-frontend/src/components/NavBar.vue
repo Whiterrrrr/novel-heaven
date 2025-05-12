@@ -56,6 +56,7 @@
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/store/index';
+import axios from 'axios';             // ← 新增
 
 const router = useRouter();
 const route = useRoute();
@@ -79,6 +80,23 @@ function handleMyCenter() {
   else alert('Please log in or sign up to access My Center.');
 }
 
+// ← 新增：真正调用后端 logout，并清理前端状态
+async function logout() {
+  try {
+    await axios.post(
+      '/api/author/logout',
+      {},
+      { headers: { Authorization: `Bearer ${localStorage.token}` } }
+    );
+  } catch (err) {
+    console.warn('Logout API failed:', err);
+  }
+  // 前端清理
+  localStorage.removeItem('token');
+  userStore.isAuthenticated = false;
+  router.push('/login');
+}
+
 const handleScroll = () => {
   isScrolled.value = window.scrollY > 50;
 };
@@ -86,6 +104,7 @@ const handleScroll = () => {
 onMounted(() => window.addEventListener('scroll', handleScroll));
 onBeforeUnmount(() => window.removeEventListener('scroll', handleScroll));
 </script>
+
 
 <style scoped>
 /* 保持原有全部样式，只补一个 logout 按钮样式 */
