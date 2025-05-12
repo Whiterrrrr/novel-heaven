@@ -62,7 +62,7 @@ def get_my_center():
 def add_favorite(article_id):
     print("call add_favorite()")
     bookshelf, state = DBOperations.add_to_bookshelf(current_user.id, article_id)
-    if bookshelf is not None and state:
+    if bookshelf is not None and not state:
         return jsonify({"msg": "favorited"}), 201 # 类似于这种
     else:
         return jsonify({"msg": "unsuccessful"}), 400  # 类似于这种

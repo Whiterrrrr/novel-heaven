@@ -132,7 +132,7 @@ def update_article(article_id):
     })
 
 
-def convert_to_jpg(file_stream, output_dir):
+def convert_to_jpg(file_stream, output_dir, target_size=(297, 420)):
     try:
         with Image.open(file_stream) as img:
             # 处理RGBA模式转换(关键步骤)
@@ -142,13 +142,13 @@ def convert_to_jpg(file_stream, output_dir):
                 img = background  # [7,8](@ref)
             else:
                 img = img.convert('RGB')  # [6](@ref)
-
+            resized_img = img.resize(target_size, Image.Resampling.LANCZOS)
             # 生成唯一文件名
             filename = f"img.jpg"  # [5](@ref)
             save_path = os.path.join(output_dir, filename)
 
             # 保存优化参数
-            img.save(save_path, 'JPEG', quality=85, optimize=True)  # [6,7](@ref)
+            resized_img.save(save_path, 'JPEG', quality=85, optimize=True)  # [6,7](@ref)
             return save_path
     except Exception as e:
         raise RuntimeError(f"格式转换失败: {str(e)}")  # [6](@ref)
@@ -420,7 +420,7 @@ def show_article(article_id):
     for chapter in chapters:
         text_path = f'book_sample/{authorname}/{novelname}/chapter/{chapter["title"]}.txt'
         with open(text_path, 'r')as f:
-            chapter['content'] = f.read()[:40]
+            chapter['content'] = f.read()
         
     comments, _ = DBOperations.get_article_comments(article_id, include_user_info=True)
     result['title'] = origin['title']
