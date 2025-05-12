@@ -7,19 +7,21 @@ from ... import User
 
 
 class ViewManager():
-    def __init__(self, data):
+    def __init__(self, data: dict):
         self.data = data
     
     def show_article_stat(self):
         try:
             article_id = self.data['article_id']
-            user_id = self.data['user_id']
         except :
             return -1,-1
-        
-        is_liked = DBOperations.user_like_article(user_id, article_id)
         result = DBOperations.get_article_statistics(article_id)
-        return (is_liked, result)
+        if 'user_id' in self.data.keys():
+            user_id = self.data['user_id']
+            is_liked = DBOperations.user_like_article(user_id, article_id)
+            return (is_liked, result)
+        else:
+            return (False, result)
     
     def show_article_chapter_stat(self):
         try:
@@ -39,24 +41,25 @@ class ViewManager():
        
         
 @articles_bp.route("/bookview/<int:novel_id>")
-@login_required
+# @login_required
 def get_article_stat(novel_id):
-    data = {'article_id':novel_id,'user_id':current_user.id}
+    data = {'article_id':novel_id}
+    if current_user.is_authenticated:
+        data['user_id'] = current_user.id
     manager = ViewManager(data)
     
     is_liked, stat = manager.show_article_stat()
-    
-    article_name= stat['title']
-    author = stat['author']
-    myBalance =  DBOperations.get_user_balance(current_user.id)
+
     img_path = stat['author']+'/'+stat['title']+'/img.jpg'
     stat['cover_url'] = img_path
     stat['likedByMe'] = is_liked
-    stat['myBalance'] = myBalance
-    user = User.query.filter_by(id=current_user.id).first()
-    bookshelf = DBOperations.get_bookshelf_data(user.id)
-    bookshelf = [book.article_id for book in bookshelf]
-    stat['favoritedByMe'] = novel_id in bookshelf
+    if current_user.is_authenticated:
+        myBalance =  DBOperations.get_user_balance(current_user.id)
+        stat['myBalance'] = myBalance
+        user = User.query.filter_by(id=current_user.id).first()
+        bookshelf = DBOperations.get_bookshelf_data(user.id)
+        bookshelf = [book.article_id for book in bookshelf]
+        stat['favoritedByMe'] = novel_id in bookshelf
     if not stat:
         return jsonify(msg = 'No such article'), 404
     elif stat == -1:
@@ -93,6 +96,8 @@ def get_chapter_data(novel_id, chapter_id):
         return jsonify(msg = 'Non valid chapter_id')
     chapter = chapter_list[chapter_id-1]
     path = chapter.text_path
+    if current_user.is_authenticated:
+        DBOperations.update_reading_progress(current_user.id, novel_id, chapter_id, 0.0)
     
     with open(path, "r", encoding="utf-8") as file:
         content = file.read()

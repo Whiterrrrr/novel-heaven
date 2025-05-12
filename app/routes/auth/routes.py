@@ -59,6 +59,7 @@ def login():
 @login_required
 def logout():
     # 如果是 POST 请求，验证 CSRF Token
+    print("call logout")
     if request.method == 'POST':
         try:
             validate_csrf(request.form.get('csrf_token'))

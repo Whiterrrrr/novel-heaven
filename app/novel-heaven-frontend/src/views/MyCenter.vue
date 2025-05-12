@@ -44,13 +44,15 @@
         </div>
 
         <!-- My Rewards -->
-        <div class="rewards-section">
-          <h2 class="section-title">My Rewards</h2>
-          <ul>
-            <li v-for="(r, idx) in rewards" :key="idx">
-              On {{ r.date }}, I gave {{ r.amount }} coins to "{{ r.book }}"
-            </li>
-          </ul>
+<div class="rewards-section">
+  <h2 class="section-title">My Rewards</h2>
+  <ul>
+    <li v-for="(r, idx) in rewards" :key="idx">
+      On {{ formatDate(r.date) }}, I gave {{ r.amount }} coins to "{{ r.book }}"
+    </li>
+  </ul>
+
+
 
           <!-- —— 剩余 coin 数（紧贴 Rewards 底部） —— -->
           <div class="remain-coins">
@@ -61,15 +63,26 @@
         </div>
 
         <!-- My Comments -->
-        <div class="messages-section">
-          <h2 class="section-title">My Comments</h2>
-          <ul>
-            <li v-for="(m, idx) in messages" :key="idx">
-              In "<strong>{{ m.book }}</strong>", said
-              "<em>{{ m.content }}</em>" ({{ m.date }})
-            </li>
-          </ul>
-        </div>
+<div class="messages-section">
+  <h2 class="section-title">My Comments</h2>
+  <ul>
+    <li v-for="(m, idx) in messages" :key="idx">
+      In "<strong>{{ m.book }}</strong>", said
+      "<em>{{ m.content }}</em>" ({{ formatDate(m.date) }})
+    </li>
+  </ul>
+</div>
+
+ <!-- 新增：My Reading History -->
+  <div class="history-section rewards-section">
+    <h2 class="section-title">My Reading History</h2>
+    <ul>
+      <li v-for="(h, idx) in readingHistory" :key="idx">
+        "{{ h.book_title }}" – Chapter "{{ h.last_chapter.chapter_title }}" on {{ formatDate(h.last_read_time) }}
+      </li>
+    </ul>
+  </div>
+
       </section>
     </div>
   </div>
@@ -88,6 +101,7 @@ export default {
   name: "MyCenter",
   created() {
     this.fetchCenterData();
+    this.fetchReadingHistory();  // ⭐️ 新增：拉取阅读历史
   },
   data() {
     return {
@@ -95,10 +109,15 @@ export default {
       rewards: [],
       messages: [],
       remainingCoins: 0,
+
+      // ⭐️ 新增阅读历史相关状态
+      readingHistory: [],
+      historyPage: 1,
+      historyPerPage: 10,
     };
   },
   methods: {
-    async fetchCenterData() {
+    fetchCenterData() {
       axios
         .get("/api/user/center")
         .then((res) => {
@@ -118,9 +137,32 @@ export default {
     gotoAuthorDashboard() {
       this.$router.push("/author-dashboard");
     },
+
+    // ⭐️ 新增：拉取“阅读历史”接口
+    async fetchReadingHistory() {
+      try {
+        const res = await axios.get("/api/reading_history", {
+          params: {
+            page: this.historyPage,
+            per_page: this.historyPerPage,
+          },
+        });
+        // 接口返回 { data: history_data, pagination: {...} }
+        this.readingHistory = res.data.data || [];
+      } catch (err) {
+        console.error("Failed to load reading history", err);
+        this.readingHistory = [];
+      }
+    },
+
+    // 已有：只保留 YYYY-MM-DD
+    formatDate(dateStr) {
+      return dateStr.split("T")[0];
+    },
   },
 };
 </script>
+
 
 
 <style scoped>

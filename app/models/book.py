@@ -1,4 +1,8 @@
+import decimal
 from datetime import datetime
+
+import pytz
+
 from .base import db
 
 class Article(db.Model):
@@ -224,8 +228,8 @@ class ReadingRecord(db.Model):
     article_name = db.Column(db.String(200))
     latest_reading_time = db.Column(
         db.DateTime, 
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        default=datetime.now(pytz.utc),
+        onupdate=datetime.now(pytz.utc)
     )
     cumulative_reading_time = db.Column(db.Numeric(10, 2), default=0.0) 
     
@@ -234,11 +238,13 @@ class ReadingRecord(db.Model):
     chapter = db.relationship('Chapter', back_populates='reading_record')
     
     def __repr__(self):
-        return f'<ReadingRecord user={self.user_id} article={self.article_id}>'
+        return f'<ReadingRecord user={self.user_id} article={self.article_id} chapter={self.latest_reading_chapter_id}>'
     
     def update_reading(self, chapter_id, duration_hours):
+        def flaot_to_decimal(value):
+            return decimal.Decimal(str(value)).quantize(decimal.Decimal('0.00'), rounding=decimal.ROUND_HALF_UP)
         self.latest_reading_chapter_id = chapter_id
-        self.cumulative_reading_time += duration_hours
+        self.cumulative_reading_time += flaot_to_decimal(duration_hours)
         self.latest_reading_time = datetime.utcnow()
     
     def to_dict(self):

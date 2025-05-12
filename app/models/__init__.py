@@ -236,6 +236,7 @@ class DBOperations:
             db.session.rollback()
             print("error code:", str(e))
             return None
+
         
     @staticmethod
     def get_article_comments(article_id, page=1, per_page=20, include_user_info=False):

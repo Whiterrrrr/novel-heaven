@@ -54,6 +54,6 @@ def tip_author(article_id):
     return jsonify({
         "code": 200,
         "msg": "打赏成功",
-        "new_balance": current_user.balance,
+        "myBalance": current_user.balance,
         "transaction_id": tipping.id
     })

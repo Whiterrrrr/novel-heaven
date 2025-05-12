@@ -14,7 +14,7 @@
       </div>
       <hr />
 
-      <!-- ===== 1. Add / Edit Chapters ===== -->
+      <!-- ===== 1. Add Chapters ===== -->
       <div class="chapter-edit-section">
         <h2>Add Chapters</h2>
         <form class="chapter-form" @submit.prevent="publishChapter()">
@@ -38,18 +38,12 @@
           ></textarea>
 
           <!-- 主按钮：Publish -->
-          <button type="submit" class="save-chapter-btn" :disabled="!validChapter">
-            Publish Chapter
-          </button>
-
-          <!-- 保存草稿 -->
           <button
-            type="button"
-            class="draft-btn"
-            @click="saveDraft"
+            type="submit"
+            class="save-chapter-btn"
             :disabled="!validChapter"
           >
-            Save Draft
+            Publish Chapter
           </button>
 
           <!-- AI 续写 -->
@@ -72,14 +66,25 @@
       <!-- ===== 2. Existing Chapters ===== -->
       <div class="existing-chapters">
         <h2>Existing Chapters</h2>
+
         <div v-if="chapters.length === 0" class="empty-text">
           No chapters yet.
         </div>
+
         <div class="chapters-scroll" v-else>
           <ul>
-            <li v-for="(ch, idx) in chapters" :key="idx">
+            <li v-for="(ch, idx) in chapters" :key="ch.id || idx">
               <strong>{{ ch.title }}</strong>
               <p class="chapter-snippet">{{ ch.contentSnippet }}</p>
+
+              <!-- 修改章节按钮 -->
+              <button
+                type="button"
+                class="save-chapter-btn"
+                @click="openModifyModal(ch)"
+              >
+                Modify This Chapter
+              </button>
             </li>
           </ul>
         </div>
@@ -105,6 +110,53 @@
         Back to Dashboard
       </router-link>
     </div>
+
+    <!-- ===== Modify Chapter Modal ===== -->
+    <div
+      v-if="showModifyModal"
+      class="modal-overlay"
+      @click.self="closeModifyModal"
+    >
+      <div class="modal-content">
+        <h2>Modify Chapter</h2>
+        <form @submit.prevent="submitModify">
+          <label>Chapter Title (≤15 chars)</label>
+          <input
+            v-model="modifyChapter.title"
+            maxlength="15"
+            required
+          />
+
+          <label>
+            Chapter Content
+            <span class="count">{{ modifyCount }}/{{ maxChars }}</span>
+          </label>
+          <textarea
+            v-model="modifyChapter.content"
+            :maxlength="maxChars"
+            @input="updateCountModify"
+            rows="12"
+            class="content-area"
+            required
+          ></textarea>
+
+          <button
+            type="submit"
+            class="save-chapter-btn"
+            :disabled="!isModifyValid"
+          >
+            Republish Chapter
+          </button>
+          <button
+            type="button"
+            class="cancel-btn"
+            @click="closeModifyModal"
+          >
+            Cancel
+          </button>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -124,6 +176,11 @@ export default {
       workComments: [],
       chapters: [],
       currentChapter: { title: "", content: "" },
+
+      // —— 修改章节相关状态 —— 
+      showModifyModal: false,
+      modifyChapter: { id: null, title: "", content: "" },
+      modifyCount: 0,
     };
   },
   computed: {
@@ -131,6 +188,12 @@ export default {
       return (
         this.currentChapter.title.trim() &&
         this.currentChapter.content.trim()
+      );
+    },
+    isModifyValid() {
+      return (
+        this.modifyChapter.title.trim() &&
+        this.modifyChapter.content.trim()
       );
     },
   },
@@ -143,12 +206,16 @@ export default {
     async loadWorkData() {
       try {
         const { data } = await axios.get(
-          `/api/author/works/overview/${this.workId}`,
+          `/api/author/works/${this.workId}`,
           { headers: { Authorization: `Bearer ${localStorage.token}` } }
         );
         this.workInfo.title = data.title;
         this.workInfo.status = data.status;
-        this.chapters = data.chapters || [];
+        // 假设 data.chapters 每项形如 { id, title, content }
+        this.chapters = (data.chapters || []).map((ch) => ({
+          ...ch,
+          contentSnippet: ch.content.slice(0, 40).trim() + "...",
+        }));
         this.workComments = data.comments || [];
       } catch (error) {
         console.error(error);
@@ -156,67 +223,51 @@ export default {
       }
     },
 
-    /* -------- 字数计数 -------- */
+    /* —— 字数计数 —— */
     updateCount() {
       this.contentCount = this.currentChapter.content.length;
     },
 
-    /* -------- 更新作品状态 -------- */
+    /* —— 更新作品状态 —— */
     async updateWorkStatus() {
       try {
         await axios.put(
-          `/api/author/works/${this.workId}/status`,
-          { update_content: { status: this.workInfo.status } },
+          `/api/author/works/${this.workId}`,
+          { status: this.workInfo.status },
           { headers: { Authorization: `Bearer ${localStorage.token}` } }
         );
         alert("Status updated!");
       } catch {
-        alert("Status update failed (offline dev mode).");
+        alert("Status update failed.");
       }
     },
 
-    /* -------- 发布章节 or 草稿工具 -------- */
+    /* —— 发布章节 —— */
     async publishChapter(isDraft = false) {
       if (!this.validChapter) {
         alert("Title & content cannot be empty");
         return;
       }
-
       const payload = {
         title: this.currentChapter.title,
         content: this.currentChapter.content,
-        status: this.workInfo.status,
-        is_draft: isDraft,
       };
-
       try {
         await axios.post(
           `/api/author/works/${this.workId}/chapters`,
           payload,
           { headers: { Authorization: `Bearer ${localStorage.token}` } }
         );
-        alert(isDraft ? "Draft saved!" : "Chapter published!");
-
-        // 前端更新列表
-        const snippet =
-          this.currentChapter.content.slice(0, 40).trim() + "...";
-        this.chapters.push({
-          title: this.currentChapter.title + (isDraft ? " (draft)" : ""),
-          contentSnippet: snippet,
-        });
+        alert("Chapter published!");
         this.currentChapter = { title: "", content: "" };
         this.contentCount = 0;
+        this.loadWorkData();
       } catch {
-        alert("API failed (offline dev mode).");
+        alert("Publish failed.");
       }
     },
 
-    /* 保存草稿 */
-    saveDraft() {
-      this.publishChapter(true);
-    },
-
-    /* -------- AI 续写 -------- */
+    /* —— AI 续写 —— */
     async continueWithAI() {
       try {
         const { data } = await axios.post(
@@ -228,13 +279,53 @@ export default {
         this.updateCount();
       } catch {
         this.currentChapter.content +=
-          "\n\n(AI generated continuation... dev mock)";
+          "\n\n(AI generated continuation... mock)";
         this.updateCount();
+      }
+    },
+
+    /* —— 打开修改模态框 —— */
+    openModifyModal(ch) {
+      this.modifyChapter = { ...ch };
+      this.modifyCount = ch.content.length;
+      this.showModifyModal = true;
+    },
+
+    /* —— 关闭修改模态框 —— */
+    closeModifyModal() {
+      this.showModifyModal = false;
+      this.modifyChapter = { id: null, title: "", content: "" };
+      this.modifyCount = 0;
+    },
+
+    /* —— 修改字数计数 —— */
+    updateCountModify() {
+      this.modifyCount = this.modifyChapter.content.length;
+    },
+
+    /* —— 发送修改到后端 —— */
+    async submitModify() {
+      if (!this.isModifyValid) return;
+      try {
+        await axios.put(
+          `/api/author/works/${this.workId}/chapters/${this.modifyChapter.id}`,
+          {
+            title: this.modifyChapter.title,
+            content: this.modifyChapter.content,
+          },
+          { headers: { Authorization: `Bearer ${localStorage.token}` } }
+        );
+        alert("Chapter updated!");
+        this.closeModifyModal();
+        this.loadWorkData();
+      } catch {
+        alert("Update failed.");
       }
     },
   },
 };
 </script>
+
 
 <style scoped>
 /* —— 之前样式保持，仅少量新按钮样式 —— */

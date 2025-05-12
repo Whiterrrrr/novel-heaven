@@ -59,25 +59,15 @@ class CommentManager():
         
         
         return DBOperations.user_create_like(user_id, article_id) if status else DBOperations.user_cancel_like_article(user_id, article_id)
-        
+
         
 @articles_bp.route("/<int:article_id>/comments", methods=['POST','GET' ])
-@login_required
 def make_comment(article_id):
     if request.method == 'GET':
         data = {'article_id': article_id}
         manager = CommentManager(data)
         results, page_total_num = manager.get_article_comment()
-        """
-        def build_tree(parent_id=None):
-            return [{
-                'id': c.id,
-                'content': c.content,
-                'user_id': c.user_id,
-                'replies': build_tree(c.id),
-                'timestamp': c.timestamp.isoformat()
-            } for c in comments if c.parent_id == parent_id]
-        """
+
         if page_total_num > 0:
             return jsonify(results), 200
         else:
