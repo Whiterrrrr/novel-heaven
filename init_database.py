@@ -135,11 +135,12 @@ def process_books():
                 for idx, ch_file in enumerate(sorted(chapters_dir.glob("chapter*.txt")), 1):
                     with open(ch_file, "r", encoding="utf-8") as f:
                         content = f.read()
-                    
+                    print("idx =", idx)
                     DBOperations.create_chapter(
                         article.id,
                         {
                             "chapter_name": f"chapter{idx}",
+                            "chapter_id": idx,
                             "text_path": str(ch_file.relative_to(BASE_DIR)),
                             "word_count": len(content),
                             "status": "published"

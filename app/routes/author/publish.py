@@ -238,10 +238,11 @@ def create_chapter(article_id):
     word_count = len(content)
     user = User.query.filter_by(id=current_user.id).first().username
     
-    article = Article.query.get(article_id)
+    article: Article = Article.query.get(article_id)
     if article:
-        article_name = article.to_dict()['title'] 
-    text_path = os.path.join('book_sample', user, article_name, 'chapter', f"{recv['title']}.txt")
+        article_name = article.to_dict()['title']
+    chapterID = len(Chapter.query.filter_by(article_id=article_id).all()) + 1
+    text_path = os.path.join('book_sample', user, article_name, 'chapter', f"chapter{chapterID}.txt")
 
     os.makedirs(os.path.dirname(text_path), exist_ok=True)  
 
@@ -249,8 +250,9 @@ def create_chapter(article_id):
         f.write(content)
         
     print(f"recv is {recv}")
-    chapter_data['chapter_name'] = recv['title']
+    chapter_data['chapter_name'] = f"chapter{chapterID}"
     chapter_data['text_path'] = text_path
+    chapter_data['chapter_id'] = chapterID
     chapter_data['status'] = recv['status']
     # chapter_data['is_draft'] = False
     #print(recv['is_draft'])
@@ -268,8 +270,7 @@ def create_chapter(article_id):
         return jsonify(msg = 'Non valid input')
     else:
         return jsonify({
-            "novel_id": new_chapter.id,
-            
+            "novel_id": article_id,
         })
         
 @author_bp.route("/works/<int:article_id>/chapters/<int:chapter_id>", methods=['PUT'])
@@ -419,7 +420,8 @@ def show_article(article_id):
     novelname = Article.query.get(article_id).article_name
     for chapter in chapters:
         text_path = f'book_sample/{authorname}/{novelname}/chapter/{chapter["title"]}.txt'
-        with open(text_path, 'r')as f:
+        print(text_path)
+        with open(text_path, 'r', errors='ignore')as f:
             chapter['content'] = f.read()
         
     comments, _ = DBOperations.get_article_comments(article_id, include_user_info=True)

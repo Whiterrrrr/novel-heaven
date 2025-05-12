@@ -23,12 +23,12 @@ def get_reading_history():
     for record in query:
         book = Article.query.get(record.article_id)
         chapter = Chapter.query.get(record.latest_reading_chapter_id) if record.latest_reading_chapter_id else None
-        print(f"chapter_id:{chapter.id}, chapter_name:{chapter.chapter_name}")
+        print(f"chapter_id:{chapter.chapter_id}, chapter_name:{chapter.chapter_name}")
         history_data.append({
             "book_id": book.id,
             "book_title": book.article_name,
             "last_chapter": {
-                "chapter_id": chapter.id if chapter else None,
+                "chapter_id": chapter.chapter_id if chapter else None,
                 "chapter_title": chapter.chapter_name if chapter else "未知章节"
             },
             # "progress": round(record.percentage * 100, 1),  # 转换为百分比

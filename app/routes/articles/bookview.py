@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from . import articles_bp
-from app.models import DBOperations
+from app.models import DBOperations, Chapter
 from flask_login import login_required, current_user
 
 from ... import User
@@ -90,27 +90,26 @@ def get_chapter_data(novel_id, chapter_id):
     print(chapter_id)
     data = {'article_id':novel_id}
     manager = ViewManager(data)
-    
-    chapter_list = manager.get_article_data()
-    if chapter_id > len(chapter_list):
-        return jsonify(msg = 'Non valid chapter_id')
-    chapter = chapter_list[chapter_id-1]
-    path = chapter.text_path
+    selected_chapter = Chapter.query.filter_by(article_id=novel_id, chapter_id=chapter_id).first()
+    print(selected_chapter)
+    if selected_chapter is None:
+        return jsonify(msg = 'Non valid chapter_id'), 400
+    path = selected_chapter.text_path
     if current_user.is_authenticated:
-        DBOperations.update_reading_progress(current_user.id, novel_id, chapter_id, 0.0)
+        DBOperations.update_reading_progress(current_user.id, novel_id, selected_chapter.id, 0.0)
     
     with open(path, "r", encoding="utf-8") as file:
         content = file.read()
     
     result = {
-        'id':chapter.id,
-        'title':chapter.chapter_name,
+        'id':selected_chapter.id,
+        'title':selected_chapter.chapter_name,
         'content':content
     }    
     
-    if not chapter:
+    if not selected_chapter:
         return jsonify(msg = 'Error')
-    elif chapter == -1:
+    elif selected_chapter == -1:
         return jsonify(msg = 'Non valid chapter_id')
     else:
         return jsonify(result)
@@ -122,7 +121,7 @@ def get_chapter_stat(novel_id):
     manager = ViewManager(data)
     
     stat = manager.show_article_chapter_stat()
-    print(stat)
+    # print(stat)
     if not stat:
         return jsonify(msg = 'No such article'), 404
     elif stat == -1:

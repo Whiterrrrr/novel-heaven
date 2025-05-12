@@ -750,9 +750,10 @@ class DBOperations:
         return: 是否成功(True/False), chapter实例
         """
         try:
-            print("create chapter1")
+            print(f"create chapter")
             chapter = Chapter(
                 article_id=article_id,
+                chapter_id=chapter_data.get('chapter_id'),
                 chapter_name=chapter_data.get('chapter_name'),
                 word_count=chapter_data.get('word_count', 0),
                 text_path=chapter_data.get('text_path'),
@@ -760,6 +761,7 @@ class DBOperations:
                 latest_update_time=datetime.utcnow(),
                 is_draft=chapter_data.get('is_draft', False),
             )
+
             db.session.add(chapter)
             db.session.flush()
 

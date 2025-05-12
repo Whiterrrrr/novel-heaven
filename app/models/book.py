@@ -133,6 +133,8 @@ class Chapter(db.Model):
         nullable=False,
         index=True
     )
+
+    chapter_id = db.Column(db.Integer, nullable=False)
     
     chapter_name = db.Column(db.String(200), nullable=False)
     word_count = db.Column(db.Integer, default=0)
