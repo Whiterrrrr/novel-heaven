@@ -53,34 +53,39 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, onBeforeMount, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/store/index';
-import axios from 'axios';             // ← 新增
+import axios from 'axios';
 
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
+
 const searchQuery = ref('');
 const isScrolled = ref(false);
 
+// 页签判断
 const isNovelDetailPage = computed(() => route.name === 'NovelDetail');
-const isLibraryPage = computed(() => route.name === 'Library');
+const isLibraryPage    = computed(() => route.name === 'Library');
 const isNovelContentPage = computed(() => route.name === 'NovelContent');
-const grayBackgroundComputed = computed(() => isNovelDetailPage.value || isLibraryPage.value);
+const grayBackgroundComputed = computed(
+  () => isNovelDetailPage.value || isLibraryPage.value
+);
 
+// 搜索跳转
 const search = () => {
-  if (searchQuery.value.trim()) {
-    router.push(`/search?q=${encodeURIComponent(searchQuery.value.trim())}`);
-  }
+  const q = searchQuery.value.trim();
+  if (q) router.push(`/search?q=${encodeURIComponent(q)}`);
 };
 
+// 我的中心
 function handleMyCenter() {
   if (userStore.isAuthenticated) router.push('/my-center');
   else alert('Please log in or sign up to access My Center.');
 }
 
-// ← 新增：真正调用后端 logout，并清理前端状态
+// 后端登出 + 前端清理
 async function logout() {
   try {
     await axios.post(
@@ -91,20 +96,54 @@ async function logout() {
   } catch (err) {
     console.warn('Logout API failed:', err);
   }
-  // 前端清理
   localStorage.removeItem('token');
   userStore.isAuthenticated = false;
   router.push('/login');
 }
 
+// 滚动样式
 const handleScroll = () => {
   isScrolled.value = window.scrollY > 50;
 };
 
-onMounted(() => window.addEventListener('scroll', handleScroll));
-onBeforeUnmount(() => window.removeEventListener('scroll', handleScroll));
-</script>
+/**
+ * 新增：页面刷新或首次加载时调用
+ * 如果本地有 token，就向后端 /api/author/me 验证并更新 userStore.isAuthenticated
+ */
+async function checkAuth() {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    userStore.isAuthenticated = false;
+    return;
+  }
+  try {
+    // 请求用户信息，成功视作已登录
+    await axios.get('/api/author/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    userStore.isAuthenticated = true;
+  } catch {
+    // token 无效或过期
+    localStorage.removeItem('token');
+    userStore.isAuthenticated = false;
+  }
+}
 
+// 在挂载前先校验登录状态
+onBeforeMount(() => {
+  checkAuth();
+});
+
+// 挂载滚动监听
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll);
+});
+
+// 卸载时移除
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll);
+});
+</script>
 
 <style scoped>
 /* 保持原有全部样式，只补一个 logout 按钮样式 */
