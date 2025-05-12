@@ -28,6 +28,7 @@ def get_user_coins():
 @login_required
 def get_my_center():
     print("call get_my_center")
+    print(current_user)
     user = User.query.filter_by(id=current_user.id).first()
     bookshelf = DBOperations.get_bookshelf_data(user.id)
     bookshelf = [DBOperations.get_article_statistics(book.article_id) for book in bookshelf]

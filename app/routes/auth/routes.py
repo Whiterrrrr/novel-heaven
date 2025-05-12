@@ -135,6 +135,15 @@ def settings():
 
     return render_template('auth/settings.html', form=form)
 
+
+@auth_bp.route('/api/user/isloggedin', methods=['GET'])
+def is_logged_in():
+    if current_user.is_authenticated:
+        user = User.query.filter_by(id=current_user.id)
+        return jsonify(msg="logged in", username=user.username), 200
+    else:
+        return jsonify(msg="not logged in"), 400
+
 # 修改用户角色（管理员专用）
 @auth_bp.route('/api/user/roles/<int:user_id>', methods=['PUT'])
 @admin_required

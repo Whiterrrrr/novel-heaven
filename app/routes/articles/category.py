@@ -1,4 +1,6 @@
 from flask import Blueprint, request, g, jsonify
+from flask_login import current_user
+
 from . import articles_bp
 from app.models import DBOperations
 
@@ -76,7 +78,8 @@ def get_books_by_category():
     return jsonify(result)
 
 @articles_bp.route('/categories')
-def get_hot_category_list(): 
+def get_hot_category_list():
+    print(current_user)
     limit = request.args.get('limit', default=10, type=int)
     data = {'limit':limit}
 
