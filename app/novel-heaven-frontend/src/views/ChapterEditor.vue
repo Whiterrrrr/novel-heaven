@@ -243,7 +243,7 @@ export default {
     },
 
     /* —— 发布章节 —— */
-    async publishChapter(isDraft = false) {
+    async publishChapter() {
       if (!this.validChapter) {
         alert("Title & content cannot be empty");
         return;
@@ -251,6 +251,7 @@ export default {
       const payload = {
         title: this.currentChapter.title,
         content: this.currentChapter.content,
+        status: this.workInfo.status
       };
       try {
         await axios.post(

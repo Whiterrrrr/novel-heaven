@@ -93,7 +93,7 @@ class PublishChapter(PublishManager):
     
     def update(self):
         try:
-            chapter_id = self.data.get('article_id')
+            chapter_id = self.data.get('chapter_id')
             update_data = self.data.get('update_data')
         except:
             return -1
@@ -210,10 +210,10 @@ def create_new_article():
         return jsonify(books)
         
 
-@author_bp.route("/delete/article", methods=['POST'])
+@author_bp.route("/works/<int:article_id>", methods=['DELETE'])
 #@login_required
-def delete_article():
-    data = request.get_json()
+def delete_article(article_id):
+    data = {'article_id':article_id}
     manager = PublishArticle(data)
     
     status = manager.delete()
@@ -230,7 +230,7 @@ def delete_article():
 @login_required
 def create_chapter(article_id):
     recv = request.get_json() 
-    print(recv)
+    # print(recv)
     data = {}
     chapter_data = {}
     
@@ -248,19 +248,20 @@ def create_chapter(article_id):
     with open(text_path, 'w', encoding='utf-8') as f:
         f.write(content)
         
+    print(f"recv is {recv}")
     chapter_data['chapter_name'] = recv['title']
     chapter_data['text_path'] = text_path
     chapter_data['status'] = recv['status']
-    chapter_data['is_draft'] = recv['is_draft']
-    print(recv['is_draft'])
+    # chapter_data['is_draft'] = False
+    #print(recv['is_draft'])
     chapter_data['word_count'] = word_count
     data['chapter_data'] = chapter_data
     data['article_id'] = article_id
     manager = PublishChapter(data)
 
-
+    print(data['chapter_data'])
     status, new_chapter = manager.create()
-    
+    print(new_chapter)
     if not new_chapter:
         return jsonify(msg = 'Error')
     elif new_chapter == -1:
@@ -271,11 +272,34 @@ def create_chapter(article_id):
             
         })
         
-@author_bp.route("/publish/chapter/update", methods= ['POST'])
-def update_chapter():
-    data = request.get_json()
+@author_bp.route("/works/<int:article_id>/chapters/<int:chapter_id>", methods=['PUT'])
+@login_required
+def update_chapter(article_id, chapter_id):
+    data = {
+        'article_id':article_id,
+        'chapter_id':chapter_id
+    }
+    
+    recv = request.get_json() 
+    update = {}
+    update['chapter_name'] = recv['title']
+    
+    status = DBOperations.delete_chapter(chapter_id)  
+        
+    authorname = User.query.get(current_user.id).username
+    novelname = Article.query.get(article_id).article_name
+    text_path = f'book_sample/{authorname}/{novelname}/chapter/{recv["title"]}.txt'
+    
+    os.makedirs(os.path.dirname(text_path), exist_ok=True)  
+
+    with open(text_path, 'w', encoding='utf-8') as f:
+        f.write(recv['content'])
+    
+    update['text_path'] = text_path
+    data['update_data'] = update
     manager = PublishChapter(data)
     
+    print(update)
     article = manager.update()
     
     if not article:
@@ -289,13 +313,17 @@ def update_chapter():
        # "article_url": f"/articles/{article.id}"  # 文章打开详情页的路径
     })
     
-@author_bp.route("/delete/chapter", methods=['POST'])
+@author_bp.route("/chapters/<int:chapter_id>", methods=['PUT'])
 @login_required
-def delete_chapter():
-    data = request.get_json()
+def delete_chapter(article_id, chapter_id):
+    data = {
+        'article_id':article_id,
+        'chapter_id':chapter_id
+    }
     manager = PublishChapter(data)
     
     status = manager.delete()
+    
     
     if status == -1:
         return jsonify(msg = 'Non valid chapter_id')
@@ -383,7 +411,13 @@ def show_article(article_id):
     result = {}
     origin = DBOperations.get_article_statistics(article_id)
     chapters = DBOperations.get_article_chapter_summary(article_id)
-    
+    authorname = User.query.get(current_user.id).username
+    novelname = Article.query.get(article_id).article_name
+    for chapter in chapters:
+        text_path = f'book_sample/{authorname}/{novelname}/chapter/{chapter["title"]}.txt'
+        with open(text_path, 'r')as f:
+            chapter['content'] = f.read()[:40]
+        
     comments, _ = DBOperations.get_article_comments(article_id, include_user_info=True)
     result['title'] = origin['title']
     result['status'] = origin['status']

@@ -596,6 +596,7 @@ class DBOperations:
         try:
             chapter = Chapter.query.get(chapter_id)
             if not chapter:
+                print('yes')
                 return None
 
             allowed_fields = {
@@ -749,6 +750,7 @@ class DBOperations:
         return: 是否成功(True/False), chapter实例
         """
         try:
+            print("create chapter1")
             chapter = Chapter(
                 article_id=article_id,
                 chapter_name=chapter_data.get('chapter_name'),
@@ -756,12 +758,13 @@ class DBOperations:
                 text_path=chapter_data.get('text_path'),
                 status=chapter_data.get('status'),
                 latest_update_time=datetime.utcnow(),
-                is_draft=chapter_data.get('is_draft'),
+                is_draft=chapter_data.get('is_draft', False),
             )
             db.session.add(chapter)
             db.session.flush()
 
             article = db.session.get(Article, article_id)
+            
             if not article:
                 raise ValueError("关联文章不存在")
 
@@ -994,9 +997,9 @@ class DBOperations:
         :return: 章节摘要列表，格式：[{"id": 1, "title": "第一章"}, ...]
         """
         chapters = Chapter.query.filter_by(article_id=article_id).order_by(Chapter.id.asc()).all()
-        return [{"id": chapter.id, "title": chapter.chapter_name} for chapter in chapters if not chapter.is_draft]
+        return [{"id": chapter.id, "title": chapter.chapter_name} for chapter in chapters ]
       
-      
+    
     def get_author_articles(author_id):
         """
         返回 author_id名下的自创书籍

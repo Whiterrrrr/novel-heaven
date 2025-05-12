@@ -122,7 +122,7 @@ def get_chapter_stat(novel_id):
     manager = ViewManager(data)
     
     stat = manager.show_article_chapter_stat()
-    
+    print(stat)
     if not stat:
         return jsonify(msg = 'No such article'), 404
     elif stat == -1:
