@@ -35,8 +35,8 @@ class User(UserMixin, db.Model):
         'Article',
         back_populates='author',
         lazy='dynamic',
-        cascade='all, delete-orphan',  # 添加级联删除
-        passive_deletes=True  # 允许数据库级联
+        cascade='all, delete-orphan', 
+        passive_deletes=True 
     )
     bookshelves = db.relationship(
         'BookShelf', 

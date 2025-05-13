@@ -13,9 +13,9 @@ class DBOperations:
     @staticmethod
     def update_user_role(user_id, new_role):
         """
-        更新用户角色（管理员操作）
-        :param user_id: 目标用户ID
-        :param new_role: 新角色
+        update role management
+        :param user_id: int
+        :param new_role: str
         :return: (success: bool, message: str, status_code: int)
         """
         try:
@@ -33,8 +33,8 @@ class DBOperations:
     @staticmethod
     def delete_user(user_id):
         """
-        删除用户（管理员操作）
-        :param user_id: 目标用户ID
+        delete user, managed by admin
+        :param user_id: int
         :return: (success: bool, message: str, status_code: int)
         """
         try:
@@ -52,9 +52,8 @@ class DBOperations:
     @staticmethod
     def update_user_settings(user_id, update_data):
         """
-        更新用户设置
-        :param user_id: 用户ID
-        :param update_data: 更新数据字典
+        :param user_id: int
+        :param update_data: dict
         :return: (success: bool, message: str)
         """
         try:
@@ -67,14 +66,14 @@ class DBOperations:
                     User.username == update_data['username'],
                     User.id != user_id
                 ).first():
-                    return False, "用户名已被使用"
+                    return False, "Username has been used "
 
             if 'email' in update_data:
                 if User.query.filter(
                     User.email == update_data['email'],
                     User.id != user_id
                 ).first():
-                    return False, "邮箱已被注册"
+                    return False, "email has been registered"
 
             allowed_fields = {'username', 'email', 'authorname', 'gender', 'password', 'is_author', 'joined_at', 'last_seen', 'balance'}
             for field, value in update_data.items():
@@ -85,10 +84,10 @@ class DBOperations:
                         setattr(user, field, value)
 
             db.session.commit()
-            return True, "设置更新成功"
+            return True, "update suc"
         except SQLAlchemyError as e:
             db.session.rollback()
-            return False, f"更新失败: {str(e)}"
+            return False, f"update fail: {str(e)}"
     
     @staticmethod
     def get_user_by_id(user_id):
@@ -97,34 +96,34 @@ class DBOperations:
     @staticmethod
     def authenticate_user(email, password, remember=False):
         """
-        验证用户登录凭证
-        :param email: 用户邮箱
-        :param password: 明文密码
-        :param remember: 是否记住登录状态
+        authenticate
+        :param email: std
+        :param password: std
+        :param remember: bool
         :return: (success: bool, user: User | None, message: str)
         """
         try:
             user = User.query.filter_by(email=email).first()
             if not user:
-                return False, None, "用户不存在"
+                return False, None, "no user"
             
             if not user.check_password(password):
-                return False, None, "密码错误"
+                return False, None, "wrong password"
             
             # user.last_seen = datetime.utcnow()
             db.session.commit()
             session['user_id'] = user.id
             login_user(user, remember=remember)
-            return True, user, "登录成功"
+            return True, user, "login suc"
         except SQLAlchemyError:
             db.session.rollback()
-            return False, None, "数据库错误"
+            return False, None, "wrong database"
 
     @staticmethod
     def check_and_reward_daily_login(user):
         """
-        检查并发放每日登录奖励
-        :param user: 用户对象
+        deliver daily login reward
+        :param user
         :return: (reward_given: bool, amount: int)
         """
         try:
@@ -553,11 +552,11 @@ class DBOperations:
 
         except ValueError as e:
             db.session.rollback()
-            print(f"业务逻辑错误: {str(e)}")
+            print(f"wrong logic: {str(e)}")
             return None
         except SQLAlchemyError as e:
             db.session.rollback()
-            print(f"数据库操作异常: {str(e)}")
+            print(f"error database: {str(e)}")
             return None
 
     @staticmethod
@@ -580,8 +579,7 @@ class DBOperations:
     @staticmethod
     def add_article_view(article_id):
         """
-        增加阅读量
-        return是否成功
+        return: bool
         """
         article = Article.query.get(article_id)
         if not article:
@@ -618,7 +616,7 @@ class DBOperations:
                     db.func.sum(Chapter.word_count)
                 ).filter(
                     Chapter.article_id == article.id,
-                    Chapter.is_draft == False  # 只统计非草稿章节
+                    Chapter.is_draft == False
                 ).scalar() or 0
 
                 article.word_count = total_words
@@ -631,6 +629,7 @@ class DBOperations:
 
     @staticmethod
     def update_reading_progress(user_id, article_id, chapter_id, duration_hours):
+        
         try:
             record = ReadingRecord.query.filter_by(
                 user_id=user_id,
@@ -669,31 +668,10 @@ class DBOperations:
             db.session.rollback()
             return False
     
-    
-    # @staticmethod
-    # def make_like(article_id):
-    #     """
-    #     文章点赞
-    #     :param article_id: 文章ID
-    #     :return: (success: bool, likes: int)
-    #     """
-    #     try:
-    #         article = Article.query.get(article_id)
-    #         if not article:
-    #             return False, 0
-            
-    #         article.likes += 1
-    #         db.session.commit()
-    #         return True, article.likes
-    #     except SQLAlchemyError:
-    #         db.session.rollback()
-    #         return False, 0
-    
     @staticmethod
     def delete_like(article_id):
         """
-        文章点赞
-        :param article_id: 文章ID
+        :param article_id: int
         :return: (success: bool, likes: int)
         """
         try:
@@ -714,8 +692,8 @@ class DBOperations:
     @staticmethod
     def delete_book_from_shelf(user_id, article_id):
         """
-        从书架移除书籍
-        :return: 是否成功
+       delete article data form user's bookshelf
+        :return: bool
         """
         try:
             deleted = BookShelf.query.filter_by(
@@ -731,8 +709,8 @@ class DBOperations:
     @staticmethod
     def get_latest_reading(user_id):
         """
-        获取用户最近阅读记录
-        :return: ReadingRecord对象或None
+        get latest reding record of user
+        :return: ReadingRecord or None
         """
         try:
             return ReadingRecord.query.filter_by(
@@ -746,11 +724,10 @@ class DBOperations:
     @staticmethod
     def create_chapter(article_id, chapter_data):
         """
-        创建章节并同步更新创作列表
-        return: 是否成功(True/False), chapter实例
+        create chapter with data
+        return: bool, chapter
         """
         try:
-            print(f"create chapter")
             chapter = Chapter(
                 article_id=article_id,
                 chapter_id=chapter_data.get('chapter_id'),
@@ -768,7 +745,7 @@ class DBOperations:
             article = db.session.get(Article, article_id)
             
             if not article:
-                raise ValueError("关联文章不存在")
+                raise ValueError("No Article")
 
             article.chapter_number = Article.chapter_number + 1
             article.latest_update_time = datetime.utcnow()
@@ -807,18 +784,18 @@ class DBOperations:
 
         except ValueError as e:
             db.session.rollback()
-            print(f"业务逻辑错误: {str(e)}")
+            print(f"Logical Error: {str(e)}")
             return False, None
         except SQLAlchemyError as e:
             db.session.rollback()
-            print(f"数据库操作异常: {str(e)}")
+            print(f"Database Error: {str(e)}")
             return False, None
         
     @staticmethod
     def delete_article(article_id):
         """
-        删除文章（级联删除关联章节）
-        :return: 是否成功
+        delete article
+        :return: bool
         """
         try:
             deleted = Article.query.filter_by(id=article_id).delete()
@@ -831,8 +808,8 @@ class DBOperations:
     @staticmethod
     def delete_chapter(chapter_id):
         """
-        删除章节并同步更新相关数据
-        Return: 是否成功 True/False
+        delet chapter and update data
+        Return: bool
         """
         try:
             chapter = db.session.get(Chapter, chapter_id)
@@ -862,7 +839,7 @@ class DBOperations:
                     
                     article.latest_update_chapter_name = (
                         latest_chapter.chapter_name if latest_chapter 
-                        else f"已删除章节: {chapter_name}"
+                        else f"has deleted: {chapter_name}"
                     )
                     
                 total_words = db.session.query(
@@ -884,7 +861,7 @@ class DBOperations:
                 creation_list.latest_update_chapter_name = (
                     article.latest_update_chapter_name 
                     if article 
-                    else f"已删除章节: {chapter_name}"
+                    else f"has deleted: {chapter_name}"
                 )
 
             db.session.commit()
@@ -892,17 +869,17 @@ class DBOperations:
 
         except SQLAlchemyError as e:
             db.session.rollback()
-            print(f"章节删除失败: {str(e)}")
+            print(f"delete error: {str(e)}")
             return False
     
     
     @staticmethod
     def keytag_list(search_keyword, limit=5):
         """
-        获取关键词标签列表（按使用频率排序）
-        :param search_keyword: 搜索关键词
-        :param limit: 返回数量
-        :return: List[dict] 格式示例: 
+        get list of keyward
+        :param search_keyword: str
+        :param limit: int
+        :return: List[dict]: 
             [{
                 "keyword": "星际", 
                 "is_hot": True,
@@ -910,7 +887,6 @@ class DBOperations:
             }]
         """
         try:
-            # 获取关键词及其使用次数
             keywords = db.session.query(
                 KeyWord,
                 db.func.count(ArticleKeyword.keyword_id).label('usage_count')
@@ -925,7 +901,7 @@ class DBOperations:
             ).group_by(
                 KeyWord.id
             ).order_by(
-                db.func.count(ArticleKeyword.keyword_id).desc()  # 按使用次数降序
+                db.func.count(ArticleKeyword.keyword_id).desc() 
             ).limit(limit).all()
 
             return [{
@@ -939,9 +915,8 @@ class DBOperations:
     @staticmethod
     def search_books(key_word, page=1, page_size=10, search_by_keyword=False):
         """
-        搜索文章（支持关键词和全文搜索）
-        :param key_word: 搜索词
-        :param search_by_keyword: True-按关键词搜索 False-按标题/简介搜索
+        :param key_word: str
+        :param search_by_keyword: bool
         :return: (articles, total, current_page, total_pages)
         """
         try:
@@ -981,8 +956,7 @@ class DBOperations:
     @staticmethod
     def recommend_hot_articles(limit=5):
         """
-        推荐热门文章（阅读量权重70%，点赞量30%）
-        :return: List[Article]
+        return: List[Article]
         """
         try:
             return Article.query.order_by(
@@ -994,9 +968,9 @@ class DBOperations:
     @staticmethod
     def get_article_chapter_summary(article_id):
         """
-        获取指定文章的所有章节摘要（ID 和标题）
-        :param article_id: 文章 ID
-        :return: 章节摘要列表，格式：[{"id": 1, "title": "第一章"}, ...]
+        get all chapter summary of a book, e.g. ID and title
+        :param article_id: int
+        :return: List[dict] [{"id": 1, "title": "第一章"}, ...]
         """
         chapters = Chapter.query.filter_by(article_id=article_id).order_by(Chapter.id.asc()).all()
         return [{"id": chapter.id, "title": chapter.chapter_name} for chapter in chapters ]
@@ -1004,8 +978,13 @@ class DBOperations:
     
     def get_author_articles(author_id):
         """
-        返回 author_id名下的自创书籍
+        Return informations of all books under author
         id、title、cover、intro、status、likes、commentCount
+        
+        input:
+            author_id: int
+        return:
+            article_data: dict
         """
         articles = Article.query.filter_by(author_id=author_id).all()
         
@@ -1028,12 +1007,12 @@ class DBOperations:
     
     def user_like_article(user_id, article_id):
         """
-        检查用户是否已经点赞了某篇文章
-        参数:
-            user_id: 用户ID
-            article_id: 文章ID
-        返回:
-            bool: True表示已点赞，False表示未点赞
+        Checkout whether user like the article
+        input:
+            user_id: int
+            article_id: int
+        return:
+            result: bool
         """
         like = Like.query.filter_by(user_id=user_id, article_id=article_id).first()
         return like is not None
@@ -1041,11 +1020,11 @@ class DBOperations:
     
     def user_create_like(user_id, article_id):
         """
-        用户点赞文章
-        参数:
-            user_id: 用户ID
-            article_id: 文章ID
-        返回:
+        User like operation
+        input:
+            user_id: int
+            article_id: int
+        return:
             result: bool
         """
         try:
@@ -1071,11 +1050,11 @@ class DBOperations:
         
     def user_cancel_like_article(user_id, article_id):
         """
-        用户取消点赞文章
-        参数:
-            user_id: 用户ID
-            article_id: 文章ID
-        返回:
+        User unlike operation
+        input:
+            user_id: int
+            article_id: int
+        return:
             result: bool
         """
         try:
