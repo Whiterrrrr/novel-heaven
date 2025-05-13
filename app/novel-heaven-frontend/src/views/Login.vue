@@ -40,7 +40,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
-import { useUserStore } from "@/store/index"; // Pinia / Vuex
+import { useUserStore } from "@/store/index"; 
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -62,7 +62,7 @@ async function handleLogin() {
       password: password.value,
     });
 
-    /* ➜ 假设后端返回 { token, user:{ id, name, email } } */
+    /* ➜ Assume that the backend returns { token, user:{ id, name, email } } */
     //localStorage.setItem("token", data.token);
     axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
     userStore.login(data.user, data.token);  
@@ -76,7 +76,6 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-/* —— 保持你原先的样式 —— */
 .login-container{display:flex;justify-content:center;align-items:center;background:#fffbf2;height:100vh}
 .login-box{background:#fff;border-radius:8px;padding:2rem 2.5rem;box-shadow:0 4px 10px rgba(0,0,0,.1);max-width:360px;width:100%}
 .login-title{text-align:center;color:#a8412a;margin-bottom:.5rem;font-size:1.8rem}
