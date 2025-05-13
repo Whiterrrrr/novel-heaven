@@ -3,7 +3,7 @@
 ## How to start
 ### 1. 克隆代码仓库
 ```
-git clone https://github.com/your-repo/novel_heaven.git
+git clone https://github.com/Whiterrrrr/novel-heaven.git
 cd novel_heaven
 ```
 
@@ -38,6 +38,3 @@ npm run dev
 ```
 https://tutorial.helloflask.com/
 ```
-
-### 2. framework update
-see ./doc/framework.md
