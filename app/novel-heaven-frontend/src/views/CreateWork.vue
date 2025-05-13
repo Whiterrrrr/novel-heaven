@@ -190,7 +190,7 @@ export default {
 </script>
 
 <style scoped>
-/* 弹窗更宽：960px */
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -226,7 +226,7 @@ export default {
   gap: 1rem;
 }
 
-/* Input & Textarea 基础样式 */
+
 .create-work-form input,
 .create-work-form textarea {
   padding: 0.7rem;
@@ -242,7 +242,7 @@ export default {
   box-shadow: 0 0 4px rgba(168, 65, 42, 0.4);
 }
 
-/* Category 下拉框 全宽 */
+
 .create-work-form select {
   width: 100%;
   padding: 0.7rem;
@@ -253,7 +253,7 @@ export default {
   box-sizing: border-box;
 }
 
-/* Synopsis 文本框 特别宽 & 高度放大 */
+
 .create-work-form textarea {
   width: 100%;
   min-height: 300px;
@@ -261,7 +261,7 @@ export default {
   box-sizing: border-box;
 }
 
-/* File upload */
+
 .file-wrapper {
   display: flex;
   align-items: center;
@@ -287,7 +287,7 @@ export default {
   white-space: nowrap;
 }
 
-/* Preview */
+
 .preview-area {
   display: flex;
   align-items: center;
@@ -305,7 +305,7 @@ export default {
   color: #333;
 }
 
-/* Buttons 居中 */
+
 .button-group {
   display: flex;
   justify-content: center;
@@ -335,7 +335,7 @@ export default {
   background: #999;
 }
 
-/* Misc */
+
 .count {
   font-size: 0.8rem;
   color: #777;
