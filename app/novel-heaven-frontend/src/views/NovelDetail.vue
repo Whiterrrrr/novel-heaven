@@ -57,7 +57,7 @@
       <input
         type="number"
         v-model.number="tipAmount"
-        min="1"
+        min="0"
         :max="userBalance"
       />
       <div class="tip-balance">My Balance: {{ userBalance }}</div>
@@ -158,7 +158,7 @@ const likesCount = ref(0);
 const userLiked  = ref(false); 
 const tipsCount      = ref(0)
 const userTipped = ref(false)
-const tipAmount     = ref(1)
+const tipAmount     = ref(0)
 const showTipModal = ref(false)
 const userBalance   = ref(0);
 const chaptersList = ref([])
@@ -320,12 +320,14 @@ function handleCoinClick() {
   if (!userStore.isAuthenticated) {
     return alert('Please log in first!')
   }
+  tipAmount.value = 0
   showTipModal.value = true
 }
 function cancelTip() {
   showTipModal.value = false
   tipAmount.value    = 1
 }
+
 /**
  * Validates and sends a tip for the current novel.
  *
