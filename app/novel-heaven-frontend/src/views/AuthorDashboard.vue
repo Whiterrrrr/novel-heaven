@@ -457,15 +457,20 @@ export default {
   line-height: 1.4;
 }
 
-
 .edit-chapter-btn {
-  margin-left: auto;
   background: #f05d37;
   color: #fff;
   border: none;
   border-radius: 4px;
   padding: 0.6rem 1.2rem;
   cursor: pointer;
+}
+
+.work-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items:flex-end; 
 }
 
 .edit-chapter-btn:disabled {
