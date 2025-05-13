@@ -20,10 +20,24 @@ def admin_required(fn):
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-
-    #if current_user.is_authenticated:
-        #return jsonify({"message": "Already logged in"}), 400
-    
+    """
+    Handle user login
+    Methods:
+        GET: Serve login form
+        POST: Authenticate user credentials
+    Form Data:
+        email (str): User's email address
+        password (str): User's password
+    Returns:
+        - 200: JSON with user data and auth token
+        - 401: JSON error for invalid credentials
+        - 400: JSON error if already logged in
+    Process:
+        1. Validate login form
+        2. Authenticate via DBOperations
+        3. Apply daily login reward if eligible
+        4. Set user session via login_user()
+    """
     form = LoginForm()
     print("call login", form.email.data, form.password.data)
     if True or form.validate_on_submit():
@@ -51,14 +65,28 @@ def login():
         
         flash(message, 'danger')
     else:
-        print("验证失败原因:", form.errors)
+        print("failure:", form.errors)
 
     return jsonify({"message": "Invalid email or password"}), 401
 
 @auth_bp.route('/logout', methods=['GET', 'POST'])
 @login_required
 def logout():
-    # 如果是 POST 请求，验证 CSRF Token
+    """
+    Terminate user session
+    Methods:
+        POST: Requires valid CSRF token
+    Security:
+        - CSRF protection for POST requests
+        - Requires active login session
+    Returns:
+        - 200: JSON success message
+        - 400: JSON error for invalid CSRF
+        - Redirect to index for non-JAX requests
+    Process:
+        1. Validate CSRF token (POST only)
+        2. Clear user session and cookies
+    """
     print("call logout")
     if request.method == 'POST':
         try:
@@ -66,11 +94,9 @@ def logout():
         except BadRequest:
             return jsonify({"code": 400, "msg": "无效的 CSRF Token"}), 400
 
-    # 执行退出
     logout_user()
-    session.clear()  # 清除所有会话数据
+    session.clear()
 
-    # 根据请求类型返回响应
     if request.accept_mimetypes.accept_json:
         return jsonify({"code": 200, "msg": "已退出登录"})
     else:
@@ -78,6 +104,23 @@ def logout():
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
+    """
+    Handle new user registration
+    Methods:
+        GET: Serve registration form
+        POST: Create new user account
+    Form Data:
+        username (str): Desired username
+        email (str): User's email address
+        password (str): User's password
+    Returns:
+        - 200: JSON with new user data
+        - 401: JSON error for failed registration
+    Process:
+        1. Validate registration form
+        2. Create user via DBOperations
+        3. Return generated user ID as token
+    """
     form = RegistrationForm()
     print("call register", form.username.data, form.email.data, form.password.data)
     if True or form.validate_on_submit():
@@ -102,13 +145,32 @@ def register():
             flash(message, 'danger')
 
     else:
-        print("验证失败原因:", form.errors)
+        print("failure:", form.errors)
     return jsonify({"message": "registration failed"}), 401
 
 
 @auth_bp.route('/settings', methods=['GET', 'PUT'])
 @login_required
 def settings():
+    """
+    Manage user account settings
+    Methods:
+        GET: Serve settings form
+        PUT: Update user information
+    Form Data:
+        username (str): Updated username
+        email (str): Updated email
+        bio (str): Updated biography
+        password (str): New password (optional)
+    Security:
+        - Requires active login session
+    Returns:
+        - HTML form (GET)
+        - Redirect with flash messages (PUT)
+    Process:
+        1. Pre-populate form with current data
+        2. Validate and update via DBOperations
+    """
     form = SettingsForm(obj=current_user)
 
     if form.validate_on_submit():
@@ -138,6 +200,14 @@ def settings():
 
 @auth_bp.route('/api/author/me', methods=['GET'])
 def is_logged_in():
+    """
+    Check authentication status
+    Returns:
+        - 200: JSON with username if authenticated
+        - 400: JSON error if not authenticated
+    Note:
+        Uses flask_login's current_user system
+    """
     print("call is_logged_in")
     if current_user.is_authenticated:
         user = User.query.filter_by(id=current_user.id)
@@ -145,19 +215,43 @@ def is_logged_in():
     else:
         return jsonify(msg="not logged in"), 400
 
-# 修改用户角色（管理员专用）
 @auth_bp.route('/api/user/roles/<int:user_id>', methods=['PUT'])
 @admin_required
 def update_role(user_id):
+    """
+    Update user role (Admin only)
+    Parameters:
+        user_id (int): Target user ID
+    JSON Body:
+        role (str): New role designation
+    Security:
+        - Requires admin privileges
+    Returns:
+        - 20X: JSON success message
+        - 40X: JSON error message
+    Process:
+        Calls DBOperations.update_user_role()
+    """
     success, message, status_code = DBOperations.update_user_role(
         user_id=user_id,
         new_role=request.json.get('role')
     )
     return jsonify(msg=message), status_code
 
-# 删除用户（管理员专用）
 @auth_bp.route('/api/user/<int:user_id>', methods=['DELETE'])
 @admin_required
 def delete_user(user_id):
+    """
+        Delete user account (Admin only)
+        Parameters:
+            user_id (int): Target user ID
+        Security:
+            - Requires admin privileges
+        Returns:
+            - 20X: JSON success message
+            - 40X: JSON error message
+        Process:
+            Calls DBOperations.delete_user()
+    """
     success, message, status_code = DBOperations.delete_user(user_id)
     return jsonify(msg=message), status_code

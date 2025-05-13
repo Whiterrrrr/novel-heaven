@@ -7,18 +7,36 @@ from app.models import db
 @auth_bp.route('/reading_history', methods=['GET'])
 @login_required
 def get_reading_history():
-    # 获取分页参数
-    print(request.args)
+    """
+    Retrieve paginated reading history
+    Methods:
+        GET: Returns user's reading progress records
+    Parameters:
+        page (int): Page number (default: 1)
+        per_page (int): Items per page (default: 10)
+    Security:
+        - Requires valid login session
+    Returns:
+        - 200: JSON with nested reading history data
+    Data Structure:
+        data: Array of book reading records containing:
+            - book_id: Unique content identifier
+            - book_title: Content title
+            - last_chapter: Latest read chapter metadata
+            - last_read_time: ISO formatted timestamp
+        pagination: Reserved for future pagination support
+    Process:
+        1. Get pagination parameters
+        2. Query reading records chronologically
+        3. Enrich with book/chapter metadata
+        4. Format timestamps to ISO standard
+    """
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
 
-    # 查询当前用户的阅读记录（按最后阅读时间倒序）
     query = ReadingRecord.query.filter_by(user_id=current_user.id).order_by(ReadingRecord.latest_reading_time.desc()).all()
     print(query)
-    # pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    # history_records = pagination.items
 
-    # 结构化返回数据
     history_data = []
     for record in query:
         book = Article.query.get(record.article_id)
@@ -31,7 +49,6 @@ def get_reading_history():
                 "chapter_id": chapter.chapter_id if chapter else None,
                 "chapter_title": chapter.chapter_name if chapter else "未知章节"
             },
-            # "progress": round(record.percentage * 100, 1),  # 转换为百分比
             "last_read_time": record.latest_reading_time.isoformat()
         })
 
@@ -44,7 +61,22 @@ def get_reading_history():
 @auth_bp.route('/reading_history/<int:record_id>', methods=['DELETE'])
 @login_required
 def delete_reading_history(record_id):
-    # 确保用户只能删除自己的记录
+    """
+    Delete specific reading history record
+    Parameters:
+        record_id (int): Target history entry ID
+    Methods:
+        DELETE: Removes reading progress record
+    Security:
+        - Requires valid login session
+    Returns:
+        - 200: Success confirmation
+        - 404: Error for non-existent record
+    Process:
+        1. Validate record ownership
+        2. Perform database deletion
+        3. Maintain data consistency
+    """
     record = ReadingRecord.query.filter_by(
         author_id=current_user.id,
         id=record_id

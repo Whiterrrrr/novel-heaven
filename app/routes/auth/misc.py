@@ -10,25 +10,63 @@ from app.models import DBOperations
 @auth_bp.route('/user/comments', methods=['GET'])
 @login_required
 def get_user_comments():
+    """
+    Retrieve authenticated user's comments
+    Methods:
+        GET: Returns paginated comment history
+    Security:
+        - Requires valid login session
+    Returns:
+        - 200: JSON array of comment objects
+    Process:
+        1. Get current user from session
+        2. Query comments via DBOperations
+        3. Format and return results
+    """
     user = User.query.filter_by(id=current_user.id).first()
-    print("call get_user_comments()")
     result = DBOperations.get_user_comments(user.id)
-    print(result)
     return jsonify({"objects": result}), 200
 
 @auth_bp.route('/user/coins', methods=['GET'])
 @login_required
 def get_user_coins():
+    """
+    Get current coin balance
+    Methods:
+        GET: Returns user's virtual currency status
+    Security:
+        - Requires valid login session
+    Returns:
+        - 200: JSON with numeric balance value
+    Data:
+        balance (int): Current spendable coins
+    """
     user = User.query.filter_by(id=current_user.id).first()
-    print("call get_user_coins()")
     return jsonify({ "balance": user.balance }), 200
 
 
 @auth_bp.route('/user/center', methods=['GET'])
 @login_required
 def get_my_center():
-    print("call get_my_center")
-    print(current_user)
+    """
+    Aggregate user profile data
+    Methods:
+        GET: Returns comprehensive user dashboard
+    Security:
+        - Requires valid login session
+    Returns:
+        - 200: JSON with nested profile data
+    Data Structure:
+        favoriteBooks: Array of book objects with metadata
+        rewards: Recent tipping transactions
+        messages: Latest comments
+        remainingCoins: Current balance
+    Process:
+        1. Fetch bookshelf data
+        2. Retrieve financial transactions
+        3. Aggregate comment history
+        4. Format asset URLs
+    """
     user = User.query.filter_by(id=current_user.id).first()
     bookshelf = DBOperations.get_bookshelf_data(user.id)
     bookshelf = [DBOperations.get_article_statistics(book.article_id) for book in bookshelf]
@@ -44,12 +82,6 @@ def get_my_center():
     comments = [{"book":get_book_name(comment["article_id"]),
                  "content": comment["content"],
                  "date": comment["time"]} for comment in comments]
-    '''{
-    book: "书籍名称",  // 字符串类型
-    content: "评论内容",  // 字符串类型
-    date: "2025-05-12"  // 字符串或Date类型（需格式化）
-    }'''
-
     return jsonify({
         "favoriteBooks": books,
         "rewards": tippings,
@@ -61,20 +93,46 @@ def get_my_center():
 @auth_bp.route('/user/favorites/<int:article_id>', methods=['POST'])
 @login_required
 def add_favorite(article_id):
-    print("call add_favorite()")
+    """
+    Add article to favorites
+    Parameters:
+        article_id (int): Target content ID
+    Methods:
+        POST: Creates new favorite entry
+    Security:
+        - Requires valid login session
+    Returns:
+        - 201: Success confirmation
+        - 400: Error for duplicate/error
+    Process:
+        Calls DBOperations.add_to_bookshelf()
+    """
     bookshelf, state = DBOperations.add_to_bookshelf(current_user.id, article_id)
     if bookshelf is not None and not state:
-        return jsonify({"msg": "favorited"}), 201 # 类似于这种
+        return jsonify({"msg": "favorited"}), 201
     else:
-        return jsonify({"msg": "unsuccessful"}), 400  # 类似于这种
+        return jsonify({"msg": "unsuccessful"}), 400
 
 
 @auth_bp.route('/user/favorites/<int:article_id>', methods=['DELETE'])
 @login_required
 def remove_favorite(article_id):
-    print("call remove_favorite()")
+    """
+    Remove article from favorites
+    Parameters:
+        article_id (int): Target content ID
+    Methods:
+        DELETE: Removes favorite association
+    Security:
+        - Requires valid login session
+    Returns:
+        - 200: Success confirmation
+        - 400: Removal failure
+    Process:
+        Calls DBOperations.delete_book_from_shelf()
+    """
     state = DBOperations.delete_book_from_shelf(current_user.id, article_id)
     if state:
         return jsonify({"msg": "unfavorited"}), 200
     else:
-        return jsonify({"msg": "unsuccessful"}), 400  # 类似于这种
+        return jsonify({"msg": "unsuccessful"}), 400
