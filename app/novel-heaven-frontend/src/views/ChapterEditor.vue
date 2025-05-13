@@ -1,10 +1,10 @@
 <template>
   <div class="chapter-editor-container">
     <div class="editor-card">
-      <!-- 作品标题 -->
+      <!-- Title of Work -->
       <h1 class="work-title">{{ workInfo.title || 'Untitled' }}</h1>
 
-      <!-- 状态下拉框 -->
+      <!-- Status drop-down box -->
       <div class="status-section">
         <label>Status:</label>
         <select v-model="workInfo.status" @change="updateWorkStatus">
@@ -37,7 +37,7 @@
             class="content-area"
           ></textarea>
 
-          <!-- 主按钮：Publish -->
+          <!-- Primary button: Publish -->
           <button
             type="submit"
             class="save-chapter-btn"
@@ -46,7 +46,7 @@
             Publish Chapter
           </button>
 
-          <!-- AI 续写 -->
+          <!-- AI continued -->
           <button
             type="button"
             class="ai-btn"
@@ -77,7 +77,7 @@
               <strong>{{ ch.title }}</strong>
               <p class="chapter-snippet">{{ ch.contentSnippet }}</p>
 
-              <!-- 修改章节按钮 -->
+              <!-- Edit chapter button -->
               <button
                 type="button"
                 class="save-chapter-btn"
@@ -177,7 +177,7 @@ export default {
       chapters: [],
       currentChapter: { title: "", content: "" },
 
-      // —— 修改章节相关状态 —— 
+      //——Modify chapter related status——
       showModifyModal: false,
       modifyChapter: { id: null, title: "", content: "" },
       modifyCount: 0,
@@ -211,7 +211,7 @@ export default {
         );
         this.workInfo.title = data.title;
         this.workInfo.status = data.status;
-        // 假设 data.chapters 每项形如 { id, title, content }
+        
         this.chapters = (data.chapters || []).map((ch) => ({
           ...ch,
           contentSnippet: ch.content.slice(0, 40).trim() + "...",
@@ -223,12 +223,12 @@ export default {
       }
     },
 
-    /* —— 字数计数 —— */
+    /* —— Word count —— */
     updateCount() {
       this.contentCount = this.currentChapter.content.length;
     },
 
-    /* —— 更新作品状态 —— */
+    /* —— Update work status —— */
     async updateWorkStatus() {
       try {
         await axios.put(
@@ -242,7 +242,7 @@ export default {
       }
     },
 
-    /* —— 发布章节 —— */
+    /* —— Release chapter —— */
     async publishChapter() {
       if (!this.validChapter) {
         alert("Title & content cannot be empty");
@@ -268,7 +268,7 @@ export default {
       }
     },
 
-    /* —— AI 续写 —— */
+    /* —— AI continues —— */
     async continueWithAI() {
       try {
         const { data } = await axios.post(
@@ -288,26 +288,26 @@ export default {
       }
     },
 
-    /* —— 打开修改模态框 —— */
+    /* —— Open the modification modal box —— */
     openModifyModal(ch) {
       this.modifyChapter = { ...ch };
       this.modifyCount = ch.content.length;
       this.showModifyModal = true;
     },
 
-    /* —— 关闭修改模态框 —— */
+    /* —— Close the modification modal box —— */
     closeModifyModal() {
       this.showModifyModal = false;
       this.modifyChapter = { id: null, title: "", content: "" };
       this.modifyCount = 0;
     },
 
-    /* —— 修改字数计数 —— */
+    /* —— Modify the word count —— */
     updateCountModify() {
       this.modifyCount = this.modifyChapter.content.length;
     },
 
-    /* —— 发送修改到后端 —— */
+    /* —— Send changes to the backend —— */
     async submitModify() {
       if (!this.isModifyValid) return;
       try {
@@ -332,7 +332,7 @@ export default {
 
 
 <style scoped>
-/* —— 之前样式保持，仅少量新按钮样式 —— */
+
 .chapter-editor-container {
   background: #fffaf0;
   min-height: 100vh;
@@ -344,14 +344,14 @@ export default {
 
 .editor-card {
   background: #fff;
-  width: 820px; /* 放宽可视宽度 */
+  width: 820px; 
   max-width: 95%;
   padding: 1.5rem 2rem;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
-/* ...其余样式保持一致... */
+
 .work-title {
   font-size: 1.6rem;
   color: #a8412a;
