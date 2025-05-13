@@ -325,7 +325,7 @@ function handleCoinClick() {
 }
 function cancelTip() {
   showTipModal.value = false
-  tipAmount.value    = 1
+  tipAmount.value    = 0
 }
 
 /**
