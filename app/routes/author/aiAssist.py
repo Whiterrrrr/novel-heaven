@@ -13,6 +13,9 @@ client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 @author_bp.route("/llm", methods=['POST' ])
 #@login_required
 def AI_helper():
+    """
+    AI assistant for expanding chapter content via LLM.
+    """
     data = request.get_json()
     
     try:

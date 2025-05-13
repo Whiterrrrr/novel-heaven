@@ -34,26 +34,21 @@ class SearchManager():
         return DBOperations.recommend_hot_articles(limit)
     
         
-@articles_bp.route("/search_tags")
-def keytag_list(): 
-    data = request.get_json()
-    manager = SearchManager(data)
-    
-    tag_list = manager.keytag_list()
-    
-    if tag_list == -1:
-        return jsonify(msg = 'Non valid input')
-    elif tag_list == []:
-        return jsonify(msg = 'Error'), 404
-    else:
-        data = [{
-        'keyword':word.keyword,
-        'is_hot':word.is_hot
-    } for word in tag_list]
-        return jsonify(data)
-    
 @articles_bp.route("/search")
-def search_books(): # 按关键词搜索title包含该词的所有文章（分页提供）
+def search_books(): # Search for all articles with the search term in the title or abstract (paging available)
+    """
+    Params:
+        q (str): The keyword to search for.
+        page (int): The current page number.
+
+    Returns:
+        JSON response:
+            - List of matching novels with details (cover URL, word count, etc.)
+            - Pagination information: total items, current page, total pages.
+            - 404 if no keyword provided.
+            - Error message for invalid input.
+    """
+    
     keywords = request.args.get("q", "")
     page = request.args.get("page", "")
     data ={
@@ -88,7 +83,16 @@ def search_books(): # 按关键词搜索title包含该词的所有文章（分�
     
 @articles_bp.route("/hot",methods=['GET'])
 #@articles_bp.route("/api/novel/categories/hot",methods=['GET'])
-def recommend(): # 简易推荐书目
+def recommend(): 
+    """
+    Recommend a list of hot novels.
+
+    Returns:
+        JSON response:
+            - List of recommended novels with details (cover URL, title, author, etc.)
+            - 404 if no recommendations are found.
+    """
+    
     data = {}
     manager = SearchManager(data)
     

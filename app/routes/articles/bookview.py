@@ -43,6 +43,24 @@ class ViewManager():
 @articles_bp.route("/bookview/<int:novel_id>")
 # @login_required
 def get_article_stat(novel_id):
+    """
+    Get detailed statistics of a novel.
+
+    Args:
+        novel_id (int): Novel's unique id.
+
+    Returns:
+        dict or JSON response:
+            - Article stats if successful.
+            - 404 JSON if article not found.
+            - Error message if invalid ID.
+
+    Features:
+        - Fetch basic article info and cover image path.
+        - Check if current user liked or favorited it.
+        - If logged in, include user balance and bookshelf.
+    
+    """
     data = {'article_id':novel_id}
     if current_user.is_authenticated:
         data['user_id'] = current_user.id
@@ -87,6 +105,26 @@ def get_article_data():
 #@articles_bp.route("/chapters")
 # @login_required
 def get_chapter_data(novel_id, chapter_id):
+    """
+    Get the content and information of a specific chapter by novel_id and chapter_id.
+
+    Args:
+        novel_id (int): The ID of the novel.
+        chapter_id (int): The ID of the chapter.
+
+    Returns:
+        JSON response:
+            - Chapter details and text content if found.
+            - 400 JSON message if chapter_id is invalid.
+            - Error message if chapter retrieval fails.
+
+    Function:
+        - Fetch chapter info from the database.
+        - If user is logged in, update reading progress.
+        - Read chapter content from text file.
+        - Return chapter ID, title, and content.
+    """
+    
     print(chapter_id)
     data = {'article_id':novel_id}
     manager = ViewManager(data)
@@ -117,6 +155,19 @@ def get_chapter_data(novel_id, chapter_id):
 
 @articles_bp.route("/<int:novel_id>/chapters")
 def get_chapter_stat(novel_id):
+    """
+    Get statistics of all chapters' summary for a novel.
+
+    Args:
+        novel_id (int): The ID of the novel.
+
+    Returns:
+        JSON response:
+            - Chapter statistics if found.
+            - 404 JSON message if novel not found.
+            - Error message if novel ID is invalid.
+
+    """
     data = {'article_id':novel_id}
     manager = ViewManager(data)
     

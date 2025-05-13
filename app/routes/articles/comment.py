@@ -63,6 +63,24 @@ class CommentManager():
         
 @articles_bp.route("/<int:article_id>/comments", methods=['POST','GET' ])
 def make_comment(article_id):
+    """
+    Methods:
+        GET:
+            - Fetch all comments for the given article.
+            - Return comments list and total page number if available.
+
+        POST:
+            - Add a new comment to the article.
+            - Requires user authentication.
+            - Get comment content from request JSON.
+            - Return created comment info if successful.
+            - Return 401 if unauthorized.
+            - Return error message for missing data or invalid article.
+
+    Args:
+        article_id (int): The ID of the article.
+        
+    """
     if request.method == 'GET':
         data = {'article_id': article_id}
         manager = CommentManager(data)
@@ -93,7 +111,7 @@ def make_comment(article_id):
         else:
             return jsonify(msg = "No such article")
      
-    
+"""
 @articles_bp.route("/comment/delete/<int:comment_id>", methods=['POST'])
 @login_required
 def delete_comment(comment_id):
@@ -143,21 +161,29 @@ def get_recent_comments():
         })
     else:
         return jsonify(msg = 'Fail to get recent comments')
+"""
 
 @articles_bp.route("/<int:novel_id>/like", methods=['POST'])
 @login_required
 def handle_like(novel_id):
+    """
+    Handle like or unlike actions for a novel.
+    
+    - Requires user authentication.
+    - Get action data ('like' or 'unlike') from request JSON.
+    - Update like count through CommentManager.
+    - Return updated total likes if successful.
+    - Return error message if operation fails.
+
+    Args:
+        novel_id (int): The ID of the novel.
+    """
+    
     data = request.get_json()
     data['article_id'] = novel_id
     data['user_id'] = current_user.id
     manager = CommentManager(data)
     
-    """
-    if data.get('action') == 'like':
-        article.likes += 1
-    elif data.get('action') == 'unlike':
-        article.likes = max(0, article.likes - 1)
-    """
     total_likes = manager.handle_article() 
 
     if total_likes != None:

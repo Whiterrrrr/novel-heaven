@@ -51,6 +51,19 @@ def category_list(): # 所有类型的所有书籍
     
 @articles_bp.route('/categories/list')
 def get_books_by_category(): 
+    """
+    Get a list of novels based on a given category.
+
+    Params:
+        category (str, optional): The category name to filter novels.
+
+    Returns:
+        JSON response:
+            - List of novels if found.
+            - 400 JSON message for invalid input.
+            - 404 JSON message if no such category.
+            - Error message if a server error occurs.
+    """
     category = request.args.get('category', default=None)
     data = {'category_name':category}
     manager = CategoryManager(data)
@@ -79,6 +92,17 @@ def get_books_by_category():
 
 @articles_bp.route('/categories')
 def get_hot_category_list():
+    """
+    Get a list of the most popular novel categories.
+
+    Params:
+        limit (int, optional): The maximum number of categories to return. Default is 10.
+
+    Returns:
+        JSON response:
+            - List of popular categories with their names and IDs.
+            - Error message if retrieval fails.
+    """
     print(current_user)
     limit = request.args.get('limit', default=10, type=int)
     data = {'limit':limit}

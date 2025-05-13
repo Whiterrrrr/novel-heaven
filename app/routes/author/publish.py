@@ -112,6 +112,23 @@ class PublishChapter(PublishManager):
           
 @author_bp.route("/works/<int:article_id>/status", methods= ['PUT'])
 def update_article(article_id):
+    """
+    Update the content of a specific article.
+
+
+    Arg:
+        - article_id (int): The ID of the article to update.
+
+    Param:
+        - update_content (dict): The new attribute to update.
+
+    Returns:
+        JSON response:
+            - If success: Confirmation message and latest update timestamp.
+            - 404 if the article does not exist.
+            - 400 if the input is invalid.
+    """
+    
     recv = request.get_json()
     data = {}
     data['article_id'] = article_id
@@ -135,7 +152,7 @@ def update_article(article_id):
 def convert_to_jpg(file_stream, output_dir, target_size=(297, 420)):
     try:
         with Image.open(file_stream) as img:
-            # 处理RGBA模式转换(关键步骤)
+            
             if img.mode in ('RGBA', 'LA'):
                 background = Image.new('RGB', img.size, (255, 255, 255))
                 background.paste(img, mask=img.split()[-1])
@@ -143,11 +160,10 @@ def convert_to_jpg(file_stream, output_dir, target_size=(297, 420)):
             else:
                 img = img.convert('RGB')  # [6](@ref)
             resized_img = img.resize(target_size, Image.Resampling.LANCZOS)
-            # 生成唯一文件名
+            
             filename = f"img.jpg"  # [5](@ref)
             save_path = os.path.join(output_dir, filename)
 
-            # 保存优化参数
             resized_img.save(save_path, 'JPEG', quality=85, optimize=True)  # [6,7](@ref)
             return save_path
     except Exception as e:
@@ -156,6 +172,9 @@ def convert_to_jpg(file_stream, output_dir, target_size=(297, 420)):
 @author_bp.route("/works", methods=['POST','GET'])
 @login_required
 def create_new_article():
+    """
+    Create a new novel (POST) or list the author's novels (GET).
+    """
     if request.method == 'POST':
         article_data = {}
         
@@ -213,6 +232,10 @@ def create_new_article():
 @author_bp.route("/works/<int:article_id>", methods=['DELETE'])
 #@login_required
 def delete_article(article_id):
+    """
+    Delete a specified article by its ID.
+    """
+    
     data = {'article_id':article_id}
     manager = PublishArticle(data)
     
@@ -229,6 +252,22 @@ def delete_article(article_id):
 @author_bp.route("/works/<int:article_id>/chapters", methods=['POST'])
 @login_required
 def create_chapter(article_id):
+    """
+    Create a new chapter for a specific article.
+
+    Arg:
+        - article_id (int): ID of the article to which the chapter belongs.
+
+    Request JSON Body:
+        - title (str): Chapter title.
+        - content (str): Chapter content.
+
+    Actual Operations:
+        - Save chapter content as a text file under the author's directory.
+        - Generate chapter metadata including word count and file path.
+        - Use PublishChapter manager to insert chapter data into the database.
+    """
+    
     recv = request.get_json() 
     # print(recv)
     data = {}
@@ -252,7 +291,7 @@ def create_chapter(article_id):
     with open(text_path, 'w', encoding='utf-8') as f:
         f.write(content)
         
-    print(f"recv is {recv}")
+    # print(f"recv is {recv}")
     chapter_data['chapter_name'] = f"chapter{chapterID}"
     chapter_data['text_path'] = text_path
     chapter_data['chapter_id'] = chapterID
@@ -264,9 +303,9 @@ def create_chapter(article_id):
     data['article_id'] = article_id
     manager = PublishChapter(data)
 
-    print(data['chapter_data'])
+    # print(data['chapter_data'])
     status, new_chapter = manager.create()
-    print(new_chapter)
+    # print(new_chapter)
     if not new_chapter:
         return jsonify(msg = 'Error')
     elif new_chapter == -1:
@@ -279,6 +318,24 @@ def create_chapter(article_id):
 @author_bp.route("/works/<int:article_id>/chapters/<int:chapter_id>", methods=['PUT'])
 @login_required
 def update_chapter(article_id, chapter_id):
+    """
+    Update an existing chapter's title and content.
+
+
+    Args:
+        - article_id (int): ID of the article the chapter belongs to.
+        - chapter_id (int): ID of the chapter to update.
+
+    Request JSON Body:
+        - title (str): New chapter title.
+        - content (str): Updated chapter content.
+
+    Behavior:
+        - Delete the original chapter text file.
+        - Save the updated content as a new text file with the new chapter title.
+        - Update chapter metadata in the database via PublishChapter manager.
+    """
+    
     data = {
         'article_id':article_id,
         'chapter_id':chapter_id
@@ -308,7 +365,7 @@ def update_chapter(article_id, chapter_id):
     data['update_data'] = update
     manager = PublishChapter(data)
     
-    print(update)
+    # print(update)
     article = manager.update()
     
     if not article:
@@ -341,33 +398,6 @@ def delete_chapter(article_id, chapter_id):
     else:
         return jsonify(msg = 'Successfully delete')
     
-"""
-@author_bp.route("/editor/article/<int:article_id>")
-@login_required
-def article_editor(article_id):
-
-    article = Article.query.filter_by(
-        id=article_id,
-        user_id=current_user.id
-    ).first_or_404()
-    
-    chapters = Chapter.query.filter_by(article_id=article_id).order_by(Chapter.order).all()
-    
-    return render_template('editor.html', 
-        article=article,
-        chapters=chapters
-    )
-
-@author_bp.route("/editor/chapter/<int:chapter_id>")
-@login_required
-def chapter_editor(chapter_id):
-    
-    chapter = Chapter.query.filter_by(chapter_id=chapter_id)
-    
-    return render_template('editor_chapter.html', 
-        chapter=chapter
-    )
-    """
 
 @author_bp.route("/me")
 @login_required
@@ -383,6 +413,10 @@ def author_info():
 @author_bp.route("/comments")
 @login_required
 def fetch_comment():
+    """"
+    Fetch the latest comments for all articles authored by the current logged-in author.
+    """
+    
     limit = request.args.get("limit", 5)
     user_id = current_user.id
     
@@ -395,7 +429,7 @@ def fetch_comment():
         
     flattened_data = [item for sublist in comment for item in sublist]
 
-    # 按时间降序排序
+    # Sort by time descending
     sorted_data = sorted(
         flattened_data,
         key=lambda x: datetime.fromisoformat(x['time']),
@@ -417,6 +451,21 @@ def fetch_comment():
 @author_bp.route("/works/overview/<int:article_id>")
 @login_required 
 def show_article(article_id):
+    """
+    Retrieve detailed information about a specific article, including its metadata, chapters, and comments.
+
+    Arg:
+        - article_id (int): ID of the article to retrieve.
+
+    Behavior:
+        - Fetch article metadata such as title and status.
+        - Fetch a summary of all chapters for the article.
+        - Read content of each chapter from local text files.
+        - Retrieve all comments on the article, including commenter usernames.
+        - Combine all information into a structured JSON response.
+
+    """
+    
     result = {}
     origin = DBOperations.get_article_statistics(article_id)
     chapters = DBOperations.get_article_chapter_summary(article_id)
