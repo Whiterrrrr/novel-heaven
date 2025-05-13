@@ -72,13 +72,13 @@ function isValidPassword(pwd) {
 async function handleRegister() {
   errorMsg.value = "";
 
-  /* 校验：用户名、邮箱、密码皆非空 */
+  /* Verification: Username, email address, password are not empty */
   if (!username.value.trim() || !email.value.trim() || !password.value) {
     errorMsg.value = "Username, email and password are required.";
     return;
   }
 
-  /* 密码格式检查 */
+  /* Password format check */
   if (!isValidPassword(password.value)) {
     errorMsg.value =
       "Password must be exactly 10 characters long and contain both letters and digits.";
@@ -102,7 +102,6 @@ async function handleRegister() {
 </script>
 
 <style scoped>
-/* —— 样式同前 —— */
 .register-container{display:flex;justify-content:center;align-items:center;background:#fffaf0;height:100vh}
 .register-box{background:#fff;border-radius:8px;padding:2rem 2.5rem;box-shadow:0 4px 10px rgba(0,0,0,.1);max-width:360px;width:100%}
 .register-title{text-align:center;color:#a8412a;margin-bottom:.5rem;font-size:1.8rem}
