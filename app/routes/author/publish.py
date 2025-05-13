@@ -235,7 +235,6 @@ def delete_article(article_id):
     """
     Delete a specified article by its ID.
     """
-    
     data = {'article_id':article_id}
     manager = PublishArticle(data)
     

@@ -4,7 +4,7 @@ from app.models import DBOperations
 import os
 
 DEEPSEEK_API_URL = "https://api.siliconflow.cn/v1/chat/completions"
-DEEPSEEK_API_KEY = "sk-73434e531e7f406ab9c349743022e9b7"
+DEEPSEEK_API_KEY = "your api key"
 
 from openai import OpenAI
 
