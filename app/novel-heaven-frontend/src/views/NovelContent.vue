@@ -16,14 +16,14 @@
         >{{ line }}</p>
        </div>
      <div class="nav-buttons">
-       <!-- 上一章 -->
+       <!-- previous page -->
        <button
          v-if="!isFirstChapter"
          @click="goToPrevChapter"
          class="prev-btn"
        >Previous Chapter</button>
 
-       <!-- 下一章 -->
+       <!-- next page -->
        <button
          v-if="!isLastChapter"
          @click="goToNextChapter"
@@ -46,37 +46,48 @@ const router = useRouter();
 const novelId = route.params.novelId;
 const chapterIdxParam = computed(() => parseInt(route.params.chapterId, 10) || 1);
 const novelTitle = ref('');
-//const chapters = ref([]);
-const chapters = ref([
-  { id: 1, title: '第一章 替嫁' },
-  { id: 2, title: '第二章 拿惯银枪的手' },
-  { id: 3, title: '第三章 掐着点回来圆房？' },
-  
-]);
+const chapters = ref([]);
 const currentChapter = ref({ title: '', content: '' })
 const currentIndex = computed(() => chapterIdxParam.value - 1)
 const isFirstChapter = computed(() => currentIndex.value <= 0)
 const isLastChapter  = computed(() => currentIndex.value >= chapters.value.length - 1)
 
+/**
+ * Fetches the novel’s metadata (title) by ID and updates the `novelTitle` ref.
+ */
  async function loadNovelMeta() {
   try {
     const { data } = await axios.get(`/api/novel/bookview/${novelId}`)
     novelTitle.value = data.title
   } catch (err) {
-    console.error('加载小说元信息失败：', err)
+    console.error('Failed to load novel metadata:', err)
   }
 }
 
-
+/**
+ * Fetches the chapter list for the current novel and updates the `chapters` ref.
+ *
+ * - Calls GET /api/novel/{novelId}/chapters
+ * - On success, assigns the returned data array to `chapters.value`
+ * - On failure, logs an error to the console
+ */
 async function loadChaptersList() {
   try {
     const { data } = await axios.get(`/api/novel/${novelId}/chapters`)
     chapters.value = data
   } catch (err) {
-    console.error('加载章节列表失败：', err)
+    console.error('Failed to load novel chapter', err)
   }
 }
-
+/**
+ * Fetches the content for the specified chapter of the current novel
+ * and updates the `currentChapter` ref.
+ *
+ * - Determines chapter index from `chapterIdxParam`
+ * - Calls GET /api/novel/{novelId}/chapters/{idx}/content
+ * - On success, assigns response data to `currentChapter.value`
+ * - Logs an error on failure
+ */
 async function loadChapterContent() {
   try {
     const idx = chapterIdxParam.value
@@ -86,10 +97,10 @@ async function loadChapterContent() {
    
     currentChapter.value = data
   } catch (err) {
-    console.error('加载章节内容失败：', err)
+    console.error('Failed to load novel content', err)
   }
 }
-
+// Watch the route’s chapterId parameter and run loadChapterContent immediately on setup and whenever it changes  
 watch(
   () => route.params.chapterId,
   loadChapterContent,
@@ -104,14 +115,12 @@ onMounted(() => {
 
 const contentLines = computed(() =>
   currentChapter.value.content
-    .split(/\r?\n/)       // 按回车拆行
-    .map(l => l.trim())    // 去掉首尾空格
-    .filter(l => l)        // 去掉空行
+    .split(/\r?\n/)       
+    .map(l => l.trim())    
+    .filter(l => l)        
 );
 
-
-
-// 跳转到下一章
+// go to the next chapter
 function goToNextChapter() {
   const nextSeq = currentIndex.value + 2;  
    router.push({
@@ -122,7 +131,7 @@ function goToNextChapter() {
      }
   })
 }
-// 跳转到上一章
+// go to the previous chapter
 function goToPrevChapter() {
       const prevSeq = currentIndex.value;  
         router.push({
@@ -159,8 +168,8 @@ function goToPrevChapter() {
 .divider {
   border: none;
   height: 1px;
-  background-color: #e0e0e0; /* 淡灰色 */
-  margin: 16px 0;            /* 上下留白可根据需要调整 */
+  background-color: #e0e0e0; 
+  margin: 16px 0;            
   width: 100%;  
 }
  .novel-page {
@@ -194,7 +203,7 @@ function goToPrevChapter() {
 
 .content-lines p {
   margin-left: 20px;
-  text-indent: 2em;   /* 首行缩进两格 */
+  text-indent: 2em;   
   line-height: 1.6;
   text-align: left;
 }

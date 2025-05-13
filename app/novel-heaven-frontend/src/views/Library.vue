@@ -1,6 +1,6 @@
 <template>
     <div class="library">
-      <!-- 分类筛选 -->
+      <!-- fliterring -->
       <div class="filter-row">
         <span class="filter-label">Category：</span>
         <button
@@ -13,7 +13,7 @@
         </button>
       </div>
   
-      <!-- 排序标签 -->
+      <!-- sorting tabs -->
       <div class="sort-tabs">
         <button
           v-for="tab in sortTabs"
@@ -25,7 +25,7 @@
         </button>
       </div>
   
-      <!-- 书籍列表 -->
+      <!-- book list -->
       <div class="grid">
         <div
           v-for="book in sortedBooks"
@@ -54,25 +54,39 @@
   const categories       = ref(['All'])
   const selectedCategory = ref('All')
   
-  // 排序选项
+  // sorting tabs
   const sortTabs = ['Hot', 'New'];
   const selectedSort = ref(sortTabs[0]);
   
   const books = ref([]);
   
+  /**
+ * Fetches up to 10 novel categories from the API and initializes the category list.
+ *
+ * - Calls GET /api/novel/categories?limit=10
+ * - Prepends "All" to the returned categories
+ * - Sets the first category as the default selection
+ */
   async function fetchCategories() {
   try {
     const { data } = await axios.get('/api/novel/categories', {
       params: { limit: 10 }
     })
-    // 假设后端返回 [ { id, name, usage_count }, ... ]
     categories.value = ['All', ...data.map(c => c.category)]
-    // 默认选第一个
     selectedCategory.value = categories.value[0]
   } catch (err) {
-    console.error('拉取分类失败', err)
+    console.error('Failed to fetch categories:', err)
   }
 }
+/**
+ * Fetches the list of novels for the selected category and updates the `books` ref.
+ *
+ * - If `selectedCategory` is not "All", includes `category_name` as a query param.
+ * - Calls GET /api/novel/categories/list with appropriate params.
+ * - Maps each returned item to an object with id, title, author, status, word count,
+ *   cover URL, description, update time, category, views, and likes.
+ * - On failure, logs an error to the console.
+ */
 async function fetchBooks() {
   try {
     const params = {}
@@ -80,8 +94,6 @@ async function fetchBooks() {
       params.category_name = selectedCategory.value
     }
     const { data } = await axios.get('/api/novel/categories/list', { params })
-    // 后端 get_articles_by_category 返回 ORM 对象序列化后的字段：
-    // id, article_name, status, word_count, latest_update_time, intro, author, category
     books.value = data.map(item => ({
       id:           item.id,
       title:        item.article_name,
@@ -98,7 +110,7 @@ async function fetchBooks() {
       likes   :      item.likes,
     }))
   } catch (err) {
-    console.error('拉取书籍列表失败', err)
+    console.error('Failed to book list:', err)
   }
 }
  
@@ -106,17 +118,19 @@ onMounted(async () => {
   await fetchCategories()
   await fetchBooks()
 })  
-
+// Re-fetch the book list whenever the selected category changes
 watch(selectedCategory, fetchBooks)
-  // 先按分类过滤
+// Compute a filtered list of books
   const filteredBooks = computed(() =>
   books.value.filter(b => 
     selectedCategory.value === 'All' || b.category === selectedCategory.value
   )
 )
-//只做“最热”排序，其他直接用后端默认时间顺序
+/**
+ * Returns the book list sorted by a hotness score (0.7 × views + 0.3 × likes)
+ * when "Hot" is selected; otherwise returns the unmodified list.
+ */
 const sortedBooks = computed(() => {
-  // 如果选“最热”，按 views*0.7 + likes*0.3 排倒序
   if (selectedSort.value === 'Hot') {
     return [...filteredBooks.value].sort((a, b) => {
       const scoreA = a.views * 0.7 + a.likes * 0.3
@@ -124,7 +138,6 @@ const sortedBooks = computed(() => {
       return scoreB - scoreA
     })
   }
-  // “最新”——后端已经按时间倒序给过来了
   return filteredBooks.value
 })
   </script>
@@ -137,7 +150,7 @@ const sortedBooks = computed(() => {
     padding: 20px;
   }
   
-  /* 分类筛选行 */
+  /* fliterring row */
   .filter-row {
     display: flex;
     align-items: center;
@@ -162,7 +175,7 @@ const sortedBooks = computed(() => {
     border-color: #ff6600;
   }
   
-  /* 排序标签 */
+  /* sorting tabs */
   .sort-tabs {
     margin-top:20px;
     display: flex;
@@ -191,14 +204,14 @@ const sortedBooks = computed(() => {
     background: #ff6600;
   }
   
-  /* 书籍网格 */
+  /* book grid */
   .grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 24px;
   }
   
-  /* 单个书籍卡片 */
+  /* novel card */
   .book-card {
     display: flex;
     background: white;
@@ -241,9 +254,9 @@ const sortedBooks = computed(() => {
     font-size: 12px;
     color: #555;
     flex: 1;
-   display: -webkit-box;           /* 多行截断 */
+   display: -webkit-box;          
    -webkit-box-orient: vertical;
-   -webkit-line-clamp:1;          /* 限制两行 */
+   -webkit-line-clamp:1;         
    overflow: hidden;
   }
   </style>

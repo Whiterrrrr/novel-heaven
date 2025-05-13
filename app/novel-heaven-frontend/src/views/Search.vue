@@ -1,18 +1,17 @@
 <template>
     <div class="search-page">
       <div class="search-container">
-        <!-- 搜索框 -->
+        <!-- search -->
         <div class="search-bar">
           <input
             v-model="query"
             @input="hasSearched = false"
             @keyup.enter="doSearch"
-            placeholder="请输入书名或作者名"
+            placeholder="please enter novel name"
           />
           <button @click="doSearch">Search</button>
         </div>
   
-        <!-- 只有 hasSearched 为 true 时才显示结果区域 -->
         <div v-if="hasSearched" class="results-container">
           <div class="tabs">
             <button :class="{ active: tab==='related' }" @click="tab='related'">
@@ -46,7 +45,7 @@
                 <router-link
                   :to="`/novel/${novel.id}`"
                   class="read-now"
-                >立即阅读</router-link>
+                >read now</router-link>
               </div>
             </div>
           </div>
@@ -71,7 +70,13 @@
   const totalPages  = ref(1);
   const totalCount  = ref(0);
   const pageSize    = 10;
-
+/**
+ * Searches for novels matching the given query and updates the search state.
+ *
+ * - Sends GET /api/novel/search with `q`, `page`, and `page_size` params.
+ * - On success, updates `searchResults`, `totalCount`, `totalPages`, and `currentPage`.
+ * - On failure, logs an error and resets results and pagination to defaults.
+ */
    async function searchNovels(q) {
    try {
      const { data } = await axios.get('/api/novel/search', {
@@ -81,13 +86,12 @@
          page_size: pageSize
        }
      })
-     // 后端返回 { counts, items, page, total_pages }
      searchResults.value = data.items;
      totalCount.value    = data.counts;
      totalPages.value    = data.total_pages;
      currentPage.value   = data.page;
    } catch (err) {
-     console.error('搜索接口调用失败：', err);
+     console.error('Failed to fetch search results:', err);
      searchResults.value = [];
      totalCount.value    = 0;
      totalPages.value    = 1;
@@ -104,6 +108,9 @@ onMounted(() => {
     searchNovels(q); 
   }
 });
+/**
+ * Initiates a search based on the current input.
+ */
 
 async function doSearch() {
   const q = query.value.trim()
@@ -113,12 +120,10 @@ async function doSearch() {
   }
   hasSearched.value = true;
   currentPage.value = 1;
-  // 更新 URL
   router.push({ path: '/search', query: { q, page: currentPage.value } });
   
 }
-
- //监听路由变化，保持页面与 URL 同步
+// Watch route query and trigger search or reset
  watch(
    () => route.query,
    async ({ q, page }) => {
@@ -133,6 +138,7 @@ async function doSearch() {
      }
    }
  )
+ // Change to page `p` and update the search URL
   function changePage(p) {
   currentPage.value = p
   router.push({ path: '/search', query: { q: query.value, page: p } })
@@ -159,7 +165,6 @@ async function doSearch() {
     min-height: 80vh
   }
   
-  /* 搜索框 */
   .search-bar {
     justify-content: center;
     display: flex;
@@ -183,7 +188,7 @@ async function doSearch() {
     cursor: pointer;
   }
   
-  /* 标签页 */
+  /* label page */
   .tabs {
     margin-top: 24px;
     display: flex;
@@ -209,20 +214,17 @@ async function doSearch() {
     background: #ff6600;
   }
   
-  /* 结果统计 */
   .result-count {
     margin: 12px 0;
     color: #666;
   }
   
-  /* 一列排版 */
   .grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 24px;
   }
   
-  /* 小说卡片 */
   .book-card {
     display: flex;
     background: #fff;

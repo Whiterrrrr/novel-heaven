@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Delius&family=Lavishly+Yours&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
  <div class="novel-detail">
-   <!-- 顶部部分：封面、标题、字数、更新日期 -->
+   <!-- cover,headin,title -->
    <div class="novel-header">
      <img :src="novel.cover" alt="cover" class="novel-cover" />
      <div class="novel-info">
@@ -20,7 +20,7 @@
               Start Reading
             </router-link>
     <div class="action-bar">
-    <!-- 点赞 -->
+    <!-- Like -->
     <button 
       class="action-btn" 
       :class="{ active: userLiked }" 
@@ -30,7 +30,7 @@
       <span class="count">{{ likesCount }}</span>
     </button>
 
-    <!-- 投币 -->
+    <!-- Tip -->
     <button 
       class="action-btn" 
       :class="{ active: userTipped }"
@@ -40,7 +40,7 @@
       <span class="count">{{ tipsCount }}</span>
     </button>
 
-    <!-- 收藏 -->
+    <!-- Favorite -->
     <button 
       class="action-btn" 
       :class="{ active: userFavorited  }" 
@@ -73,14 +73,14 @@
  </div>
  <div class="detail-extra">
     <div class="detail-extra-container">
-      <!-- 作品简介 -->
+      <!-- description -->
       <section class="intro-section">
         <h3>Synopsis</h3>
         <hr class="section-divider" />
         <p class="intro-text">{{ novel.description }}</p>
       </section>
 
-      <!-- 目录 -->
+      <!-- Table of content -->
       <section class="toc-section">
         <h3>Table of Contents</h3>
         <hr class="section-divider" />
@@ -98,7 +98,7 @@
        
     </div>
   </div>
-  <!-- —— 新增 “评论区” 外层包裹 —— -->
+  <!-- —— comment section —— -->
  <div class="comment-extra">
       <div class="comment-extra-container">
         <div class="comment-header">
@@ -153,9 +153,9 @@ const novelId = route.params.id;
 
 const novel = ref({});
 const favoritesCount= ref(0);
-const userFavorited = ref(false);  // 收藏状态
+const userFavorited = ref(false); 
 const likesCount = ref(0);
-const userLiked  = ref(false);  // 点赞状态
+const userLiked  = ref(false); 
 const tipsCount      = ref(0)
 const userTipped = ref(false)
 const tipAmount     = ref(1)
@@ -166,17 +166,25 @@ const userStore = useUserStore();
 const comments = ref([]);
 const newComment = ref('');
 const commentTextarea = ref(null)
-
-
-
-
+/**
+ * Automatically adjusts the height of the comment textarea
+ * to fit its current content.
+ */
 function autoResize() {
     const ta = commentTextarea.value
     if (!ta) return
     ta.style.height = 'auto'
     ta.style.height = ta.scrollHeight + 'px'
   }
-
+/**
+ * Fetches detailed information for the current novel and updates related reactive refs.
+ *
+ * - Calls GET /api/novel/bookview/{novelId}
+ * - Normalizes the cover URL or uses a default image
+ * - Updates `novel`, `likesCount`, `userLiked`, `favoritesCount`, `userFavorited`,
+ *   `tipsCount`, `userTipped`, and `userBalance` based on the response
+ * - Logs an error to the console on failure
+ */
 async function loadNovelDetail() {
   try {
     const { data } = await axios.get(`/api/novel/bookview/${novelId}`)
@@ -184,34 +192,52 @@ async function loadNovelDetail() {
          ? `/api/novel/cover/${data.cover_url}`
          : '/assets/default-cover.jpg' ;
     novel.value = data ;
-    // 后端需要返回 likes, likedByMe, favoritesCount, favoritedByMe, tipsCount，tippedByMe
-    likesCount.value     = data.likes //文章的点赞数
-    userLiked.value      = data.likedByMe //用户是否对这篇文章进行了点赞
-    favoritesCount.value = data.favoritesCount//文章的收藏数
-    userFavorited.value    = data.favoritedByMe//用户是否收藏
-    tipsCount.value      = data.tipsCount//文字的投币数
-    userTipped.value     = data.tippedByMe//用户是否投了币
-    userBalance.value    = data.myBalance //用户硬币余额
+    likesCount.value     = data.likes
+    userLiked.value      = data.likedByMe 
+    favoritesCount.value = data.favoritesCount
+    userFavorited.value    = data.favoritedByMe
+    tipsCount.value      = data.tipsCount
+    userTipped.value     = data.tippedByMe
+    userBalance.value    = data.myBalance 
   } catch (err) {
-    console.error('加载小说详情失败：', err)
-    // TODO: 可展示提示或使用默认占位数据
+    console.error('Failed to load novel details:', err)
+   
   }}
+/**
+ * Fetches the list of chapters for the current novel and updates the `chaptersList` ref.
+ *
+ * - Calls GET /api/novel/{novelId}/chapters
+ * - On success, assigns response data array to `chaptersList.value`
+ * - Logs an error to the console on failure
+ */
 async function loadChaptersList() {
   try {
     const { data } = await axios.get(`/api/novel/${novelId}/chapters`)
     chaptersList.value = data
   } catch (err) {
-    console.error('加载章节列表失败：', err)
+    console.error('Failed to load chapter list:', err)
   }
 }
+/**
+ * Fetches the list of comments for the current novel and updates the `comments` ref.
+ * Logs an error if the request fails.
+ */
 async function fetchComments() {
   try {
     const { data } = await axios.get(`/api/novel/${novelId}/comments`)
     comments.value = data
   } catch (err) {
-    console.error('加载评论失败：', err)
+    console.error('Failed to load comment:', err)
   }
 }
+/**
+ * Submits a new comment for the current novel.
+ *
+ * - Trims the input text and returns if empty.
+ * - Sends POST /api/novel/{novelId}/comments with the comment content.
+ * - Clears the input field on success and reloads the comment list.
+ * - Logs an error if submission fails.
+ */
 async function submitComment() {
   const txt = newComment.value.trim()
   if (!txt) return
@@ -220,33 +246,48 @@ async function submitComment() {
     newComment.value = ''
     fetchComments()
   } catch (err) {
-    console.error('提交评论失败：', err)
+    console.error('Failed to submit comment:', err)
     
   }
 }
-
+/**
+ * Handle user like/unlike action for the current novel.
+ *
+ * - Checks if user is logged in; shows alert if not.
+ * - Toggles the `userLiked` state and updates `likesCount` immediately.
+ * - Sends POST /api/novel/{novelId}/like with the new like value.
+ * - Reverts the UI state if the request fails.
+ */
 async function handleLikeClick() {
   if (!userStore.isAuthenticated) {
     alert('Please log in first!')
     return
   }
-  // 计算下一步状态
+
   const next = !userLiked.value
   console.log('next:', next)
-  // 更新 UI
+
   userLiked.value  = next
   likesCount.value += next ? 1 : -1
   try {
-    // 同步给后端，POST /api/novel/:id/like 接收 { like: boolean }
+ 
     await axios.post(`/api/novel/${novelId}/like`, { like: next })
   } catch (err) {
-    // 回滚
+ 
     userLiked.value  = !next
     likesCount.value += next ? -1 : +1
   }
 }
 
-
+/**
+ * Handle user favorite/unfavorite action for the current novel.
+ *
+ * - Checks if user is logged in; shows an alert if not.
+ * - Toggles the `userFavorited` state and updates `favoritesCount` immediately.
+ * - Sends POST /api/user/favorites/{novelId} to add favorite when toggled on.
+ * - Sends DELETE /api/user/favorites/{novelId} to remove favorite when toggled off.
+ * - Reverts the UI state if the request fails.
+ */
 async function handleFavoriteClick() {
   if (!userStore.isAuthenticated) {
     alert('Please log in first!')
@@ -259,16 +300,16 @@ async function handleFavoriteClick() {
 
   try {
     if (next) {
-      // 发 POST，新增收藏
+ 
       await axios.post(`/api/user/favorites/${novelId}`)
     } else {
-      // 发 DELETE，取消收藏
+
       await axios.delete(`/api/user/favorites/${novelId}`)
     }
 
   } catch (err) {
-    console.error('同步收藏状态失败：', err)
-    // 回滚 UI
+    console.error('Failed to update favorite status:', err)
+
     userFavorited.value   = !next
     favoritesCount.value += next ? -1 : +1
   }
@@ -285,7 +326,14 @@ function cancelTip() {
   showTipModal.value = false
   tipAmount.value    = 1
 }
-
+/**
+ * Validates and sends a tip for the current novel.
+ *
+ * - Ensures tip amount is at least 1 and does not exceed user balance.
+ * - Sends POST /api/novel/{novelId}/tip with the tip amount.
+ * - On success, updates the total tips count, user balance, and closes the tip modal.
+ * - Alerts the user for invalid input or insufficient balance, and logs other errors.
+ */
 async function confirmTip() {
   if (tipAmount.value < 1) {
     return alert('Please enter a valid tip amount')
@@ -298,7 +346,7 @@ async function confirmTip() {
       `/api/novel/${novelId}/tip`,
       { tips: tipAmount.value }
     )
-    // 后端返回最新 tipsCount
+
     tipsCount.value  += tipAmount.value
     userBalance.value = data.myBalance
     showTipModal.value = false
@@ -306,7 +354,7 @@ async function confirmTip() {
     if (err.response?.status === 400) {
       alert('Insufficient balance')
     } else {
-      console.error('投币失败', err)
+      console.error('Failed to tip:', err)
     }
   }
 }
@@ -350,8 +398,8 @@ onMounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;   /* 新增：水平居中 */
-  text-align: center;    /* 新增：文字居中 */
+  align-items: center;   
+  text-align: center;    
   
 
 }
@@ -375,7 +423,7 @@ onMounted(() => {
 
 .read-btn-container {
   margin-left:240px;
-  justify-content: center;  /* 水平居中整个按钮组 */
+  justify-content: center;  
   align-items: center;
   display: flex;
   gap: 15px;
@@ -420,9 +468,6 @@ onMounted(() => {
  line-height: 1.5;
 }
 
-
-
-/* 响应式设计 */
 @media screen and (max-width: 768px) {
  .novel-header {
    flex-direction: column;
@@ -440,7 +485,7 @@ onMounted(() => {
    padding-left: 0;
  }
 }
-/* —— 新增 “作品简介 + 目录” 区块样式 —— */
+
 .detail-extra {
   background: #f5f5f5;
   padding: 40px 0;
@@ -454,7 +499,6 @@ onMounted(() => {
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-/* 标题 & 分界线 */
 .intro-section h3,
 .toc-section h3 {
   margin-left:20px;
@@ -470,7 +514,6 @@ onMounted(() => {
   background: #e0e0e0;
 }
 
-/* 简介文本 */
 .intro-text {
   margin-top:35px;
   margin-bottom:35px;
@@ -481,7 +524,6 @@ onMounted(() => {
   color: #555;
 }
 
-/* 目录列表 */
 .chapter-list {
   list-style: none;
   padding: 0;
@@ -520,7 +562,6 @@ onMounted(() => {
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-/* 评论区头部 */
 .comment-header {
   display: flex;
   justify-content: space-between;
@@ -548,7 +589,6 @@ onMounted(() => {
   font-weight: bold;
 }
 
-/* 评论表单 */
 .comment-form textarea {
   font-size: 16px;      
   line-height: 1.5;
@@ -581,7 +621,7 @@ onMounted(() => {
 .comment-form-actions button:hover {
   background: #e65500;
 }
-/* 登录提示 */
+
 .login-prompt {
   margin-bottom: 16px;
 }
@@ -589,8 +629,6 @@ onMounted(() => {
   color: #ff6600;
   text-decoration: none;
 }
-
-/* 评论列表 */
 
 .comment-item {
   
@@ -619,7 +657,6 @@ onMounted(() => {
   color: #444;
 }
 
-/* 保留“暂无评论” */
 .no-comments {
   text-align: center;
   color: #888;
@@ -630,11 +667,10 @@ onMounted(() => {
  margin-left:20px;
   display: flex;
   align-items: center;
-  gap: 40px;        /* 图中按钮间距约 40px */
+  gap: 40px;     
   margin-top: 16px;
 }
 
-/* 按钮整体 */
 .action-btn {
   display: inline-flex;
   align-items: center;
@@ -642,30 +678,29 @@ onMounted(() => {
   border: none;
   padding: 0;
   cursor: pointer;
-  color: #666;      /* 默认灰色 */
+  color: #666;     
   font-size: 14px;
   line-height: 1;
 }
 
-/* 图标大小 */
+
 .action-btn .icon {
   width: 24px;
   height: 24px;
   flex-shrink: 0;
-  fill: currentColor; /* 跟文字同色 */
+  fill: currentColor; 
 }
 
-/* 数字与图标留点距 */
+
 .action-btn .count {
   margin-left: 6px;
 }
 
-/* hover 效果 */
+
 .action-btn:hover {
   color: #333;
 }
 
-/* 激活态：点赞／收藏后高亮 */
 .action-btn.active {
   color: #409EFF;   
 }
@@ -673,7 +708,7 @@ onMounted(() => {
   cursor: not-allowed;
   opacity: 0.6;
 }
-/* 弹窗遮罩 */
+
 .tip-modal-overlay {
   position: fixed;
   inset: 0;
@@ -683,7 +718,7 @@ onMounted(() => {
   justify-content: center;
   z-index: 1000;
 }
-/* 弹窗主体 */
+
 .tip-modal {
   background: #fff;
   padding: 20px;
